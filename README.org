@@ -1,0 +1,3 @@
+* Restart Emacs
+  This is a simple package to restart emacs for within emacs. It offers only one
+  command ~restart-emacs~ which kills current emacs session and starts a new session.
