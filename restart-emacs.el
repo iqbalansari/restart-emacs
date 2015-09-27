@@ -28,22 +28,48 @@
   "Get absolute path to binary of currently running Emacs."
   (expand-file-name invocation-name invocation-directory))
 
-(defun restart-emacs-under-x ()
-  "Restart GUI Emacs running in X."
+(defun restart-emacs-start-gui-on-using-sh ()
+  "Start GUI version of Emacs using sh."
   (call-process "sh" nil nil nil "-c" (format "%s &" (restart-emacs-get-emacs-binary))))
 
-(defun restart-emacs-in-terminal ()
-  "Restart Emacs running in a terminal."
+(defun restart-emacs-start-gui-on-windows ()
+  "Start GUI version of Emacs on windows."
+  (w32-shell-execute "open" (restart-emacs-get-emacs-binary)))
+
+(defun restart-emacs-start-emacs-in-terminal ()
+  "Start Emacs in current terminal.
+
+This requires a shell with `fg' command and `;' construct.  This has been
+tested to work on sh, bash, zsh and fish shells"
   (suspend-emacs (format "fg ; %s -nw" (restart-emacs-get-emacs-binary))))
+
+(defun restart-emacs-ensure-can-restart ()
+  "Ensure we can restart Emacs on current platform."
+  (when (and (not (display-graphic-p))
+             (memq system-type '(windows-nt ms-dos)))
+    (user-error (format "Cannot restart emacs running in terminal on system of type `%s'" system-type))))
+
+(defun restart-emacs-launch-other-emacs ()
+  "Launch another Emacs session according to current platform."
+  (apply (if (display-graphic-p)
+             (if (memq system-type '(windows-nt msdos))
+                 #'restart-emacs-start-gui-on-windows
+               #'restart-emacs-start-gui-on-using-sh)
+           (if (memq system-type '(windows-nt msdos))
+               ;; This should not happen since we check this before triggering a restart
+               (user-error "Cannot restart Emacs running in a windows terminal")
+             #'restart-emacs-start-emacs-in-terminal))
+         nil))
 
 ;;;###autoload
 (defun restart-emacs ()
+  "Restart Emacs."
   (interactive)
+  ;; Do not trigger a restart unless we are sure, we can restart emacs
+  (restart-emacs-ensure-can-restart)
   ;; We need the new emacs to be spawned after all kill-emacs-hooks
   ;; have been processed and there is nothing interesting left
-  (let ((kill-emacs-hook (append kill-emacs-hook (list (if (display-graphic-p)
-                                                           #'restart-emacs-under-x
-                                                         #'restart-emacs-in-terminal)))))
+  (let ((kill-emacs-hook (append kill-emacs-hook (list #'restart-emacs-launch-other-emacs))))
     (save-buffers-kill-emacs)))
 
 (provide 'restart-emacs)
