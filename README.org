@@ -1,3 +1,25 @@
 * Restart Emacs
-  This is a simple package to restart emacs for within emacs. It offers only one
-  command ~restart-emacs~ which kills current emacs session and starts a new session.
+** What is this?
+   This is a simple package to restart Emacs for within Emacs. Inspired by [[http://emacs.stackexchange.com/questions/5428/restart-emacs-from-within-emacs][this]]
+   stackoverflow question
+
+** Usage
+   It offers only one command ~restart-emacs~ which kills current Emacs session
+   and starts a new session.
+
+   Additional arguments to be passed to the new instance can be specified using
+   prefix arguments
+
+   - with a single ~universal-argument~ (=C-u=) Emacs is restarted with ~--debug-init~ flag
+   - with two ~universal-argument~ (=C-u= =C-u=) Emacs is restarted with ~-Q~ flag
+   - with three ~universal-argument~ (=C-u= =C-u= =C-u=) the user is prompted for the arguments
+
+** Compatibility
+*** Restarting GUI Emacs
+    Restarting graphical Emacs should work on any UNIXy system with ~sh~ and on
+    Windows.
+
+*** Restarting Emacs running in a terminal
+    This requires that the shell from which Emacs was launched supports job
+    control.  This has been tested to work on ~sh~, ~bash~, ~zsh~, ~fish~, ~csh~
+    and ~tcsh~ however this does not work on Windows.

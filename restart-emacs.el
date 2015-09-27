@@ -56,9 +56,9 @@ ARGS is the list arguments with which Emacs should be started"
 (defun restart-emacs--start-emacs-in-terminal (&optional args)
   "Start Emacs in current terminal.
 
-ARGS is the list arguments with which Emacs should be started.
-This requires a shell with `fg' command and `;' construct.  This
-has been tested to work with sh, bash, zsh and fish shells"
+ARGS is the list arguments with which Emacs should be started.  This requires a
+shell with `fg' command and `;' construct.  This has been tested to work with
+sh, bash, zsh, fish, csh and tcsh shells"
   (suspend-emacs (format "fg ; %s %s -nw"
                          (shell-quote-argument (restart-emacs--get-emacs-binary))
                          (restart-emacs--string-join (mapcar #'shell-quote-argument
