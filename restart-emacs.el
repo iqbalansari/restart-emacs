@@ -31,56 +31,56 @@
   "Join all STRINGS using SEPARATOR."
   (mapconcat 'identity strings separator))
 
-(defun restart-emacs-get-emacs-binary ()
+(defun restart-emacs--get-emacs-binary ()
   "Get absolute path to binary of currently running Emacs."
   (expand-file-name invocation-name invocation-directory))
 
-(defun restart-emacs-start-gui-on-using-sh (&optional args)
+(defun restart-emacs--start-gui-using-sh (&optional args)
   "Start GUI version of Emacs using sh.
 
 ARGS is the list arguments with which Emacs should be started"
   (call-process "sh" nil
                 nil nil
                 "-c" (format "%s %s &"
-                             (shell-quote-argument (restart-emacs-get-emacs-binary))
+                             (shell-quote-argument (restart-emacs--get-emacs-binary))
                              (restart-emacs--string-join (mapcar #'shell-quote-argument
                                                                  args)
                                                          " "))))
 
-(defun restart-emacs-start-gui-on-windows (&optional args)
+(defun restart-emacs--start-gui-on-windows (&optional args)
   "Start GUI version of Emacs on windows.
 
 ARGS is the list arguments with which Emacs should be started"
-  (w32-shell-execute "open" (restart-emacs-get-emacs-binary) args))
+  (w32-shell-execute "open" (restart-emacs--get-emacs-binary) args))
 
-(defun restart-emacs-start-emacs-in-terminal (&optional args)
+(defun restart-emacs--start-emacs-in-terminal (&optional args)
   "Start Emacs in current terminal.
 
 ARGS is the list arguments with which Emacs should be started.
 This requires a shell with `fg' command and `;' construct.  This
 has been tested to work with sh, bash, zsh and fish shells"
   (suspend-emacs (format "fg ; %s %s -nw"
-                         (shell-quote-argument (restart-emacs-get-emacs-binary))
+                         (shell-quote-argument (restart-emacs--get-emacs-binary))
                          (restart-emacs--string-join (mapcar #'shell-quote-argument
                                                              args)
                                                      " "))))
 
-(defun restart-emacs-ensure-can-restart ()
+(defun restart-emacs--ensure-can-restart ()
   "Ensure we can restart Emacs on current platform."
   (when (and (not (display-graphic-p))
              (memq system-type '(windows-nt ms-dos)))
     (user-error (format "Cannot restart emacs running in terminal on system of type `%s'" system-type))))
 
-(defun restart-emacs-launch-other-emacs ()
+(defun restart-emacs--launch-other-emacs ()
   "Launch another Emacs session according to current platform."
   (apply (if (display-graphic-p)
              (if (memq system-type '(windows-nt msdos))
-                 #'restart-emacs-start-gui-on-windows
-               #'restart-emacs-start-gui-on-using-sh)
+                 #'restart-emacs--start-gui-on-windows
+               #'restart-emacs--start-gui-using-sh)
            (if (memq system-type '(windows-nt msdos))
                ;; This should not happen since we check this before triggering a restart
                (user-error "Cannot restart Emacs running in a windows terminal")
-             #'restart-emacs-start-emacs-in-terminal))
+             #'restart-emacs--start-emacs-in-terminal))
          ;; Since this function is called in `kill-emacs-hook' it cannot accept
          ;; direct arguments the arguments are let-bound instead
          (list restart-emacs--args)))
@@ -114,10 +114,10 @@ When called non-interactively ARGS should be a list of arguments
 with which Emacs should be restarted."
   (interactive "P")
   ;; Do not trigger a restart unless we are sure, we can restart emacs
-  (restart-emacs-ensure-can-restart)
+  (restart-emacs--ensure-can-restart)
   ;; We need the new emacs to be spawned after all kill-emacs-hooks
   ;; have been processed and there is nothing interesting left
-  (let ((kill-emacs-hook (append kill-emacs-hook (list #'restart-emacs-launch-other-emacs)))
+  (let ((kill-emacs-hook (append kill-emacs-hook (list #'restart-emacs--launch-other-emacs)))
         (restart-emacs--args (if (called-interactively-p 'any)
                                         (restart-emacs--translate-prefix-to-args args)
                                       args)))
