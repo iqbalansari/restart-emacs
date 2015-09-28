@@ -8,9 +8,7 @@
     ~restart-emacs~ is available on [[http://melpa.org/#/restart-emacs][MELPA]]. Please follow the instructions on
     MELPA [[http://melpa.org/#/getting-started][website]] to enable it, if you haven't already.
 
-    You can then install ~restart-emacs~ from the [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Package-Menu.html][package menu]].
-
-    Alternatively install it by doing the following
+    You can then install ~restart-emacs~ from the [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Package-Menu.html][package menu]]. Alternatively install it by doing the following
 
     Refresh the package index
     #+BEGIN_QUOTE
