@@ -4,7 +4,7 @@
    stackoverflow question
 
 ** Usage
-   It offers only one command ~resem-restart-emacs~ which kills current Emacs session
+   It offers only one command ~restart-emacs~ which kills current Emacs session
    and starts a new session.
 
    Additional arguments to be passed to the new instance can be specified using
