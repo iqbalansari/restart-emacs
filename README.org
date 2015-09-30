@@ -20,6 +20,12 @@
     M-x package-install RET restart-emacs
     #+END_QUOTE
 
+*** El-get
+    ~restart-emacs~ can also be installed using ~el-get~. Assuming you have latest version of el-get installing it by doing something similar to
+    #+BEGIN_QUOTE
+    M-x el-get-install RET restart-emacs
+    #+END_QUOTE
+
 ** Usage
    It offers only one command ~restart-emacs~ which kills current Emacs session
    and starts a new session.
