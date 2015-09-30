@@ -1,4 +1,7 @@
 * Restart Emacs
+
+  [[http://melpa.org/#/restart-emacs][file:http://melpa.org/packages/restart-emacs-badge.svg]]
+
 ** What is this?
    This is a simple package to restart Emacs for within Emacs. Inspired by [[http://emacs.stackexchange.com/questions/5428/restart-emacs-from-within-emacs][this]]
    stackoverflow question
