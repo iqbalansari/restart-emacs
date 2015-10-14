@@ -22,9 +22,11 @@
 
 ;;; Commentary:
 
-;; This package provides a simple command to restart emacs from within emacs
+;; This package provides a simple command to restart Emacs from within Emacs
 
 ;;; Code:
+
+(declare-function w32-shell-execute "w32fns.c")
 
 (defvar restart-emacs--args nil
   "The arguments with which to restart Emacs is bound dynamically.")
