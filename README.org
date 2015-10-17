@@ -1,6 +1,6 @@
 * Restart Emacs
 
-  [[http://melpa.org/#/restart-emacs][file:http://melpa.org/packages/restart-emacs-badge.svg]]
+  [[http://melpa.org/#/restart-emacs][file:http://melpa.org/packages/restart-emacs-badge.svg]] [[http://stable.melpa.org/#/restart-emacs][file:http://stable.melpa.org/packages/restart-emacs-badge.svg]]
 
 ** What is this?
    This is a simple package to restart Emacs for within Emacs. Inspired by [[http://emacs.stackexchange.com/questions/5428/restart-emacs-from-within-emacs][this]]
@@ -8,7 +8,7 @@
 
 ** Installation
 *** ELPA
-    ~restart-emacs~ is available on [[http://melpa.org/#/restart-emacs][MELPA]]. Please follow the instructions on
+    ~restart-emacs~ is available on [[http://melpa.org/#/restart-emacs][MELPA]] and [[http://stable.melpa.org/#/restart-emacs][MELPA Stable]]. Please follow the instructions on
     MELPA [[http://melpa.org/#/getting-started][website]] to enable it, if you haven't already.
 
     You can then install ~restart-emacs~ from the [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Package-Menu.html][package menu]]. Alternatively install it by doing the following
