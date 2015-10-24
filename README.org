@@ -2,6 +2,17 @@
 
   [[http://melpa.org/#/restart-emacs][file:http://melpa.org/packages/restart-emacs-badge.svg]] [[http://stable.melpa.org/#/restart-emacs][file:http://stable.melpa.org/packages/restart-emacs-badge.svg]]
 
+** Table of contents                                              :TOC_3_gh:
+ - [[#restart-emacs][Restart Emacs]]
+   - [[#what-is-this][What is this?]]
+   - [[#installation][Installation]]
+     - [[#elpa][ELPA]]
+     - [[#el-get][El-get]]
+   - [[#usage][Usage]]
+   - [[#compatibility][Compatibility]]
+     - [[#restarting-gui-emacs][Restarting GUI Emacs]]
+     - [[#restarting-emacs-running-in-a-terminal][Restarting Emacs running in a terminal]]
+
 ** What is this?
    This is a simple package to restart Emacs for within Emacs. Inspired by [[http://emacs.stackexchange.com/questions/5428/restart-emacs-from-within-emacs][this]]
    stackoverflow question
