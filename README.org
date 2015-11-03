@@ -15,7 +15,7 @@
 
 ** What is this?
    This is a simple package to restart Emacs for within Emacs. Inspired by [[http://emacs.stackexchange.com/questions/5428/restart-emacs-from-within-emacs][this]]
-   stackoverflow question
+   stackoverflow question.
 
 ** Installation
 *** ELPA
@@ -59,4 +59,4 @@
 *** Restarting Emacs running in a terminal
     This requires that the shell from which Emacs was launched supports job
     control.  This has been tested to work on ~sh~, ~bash~, ~zsh~, ~fish~, ~csh~
-    and ~tcsh~ however this does not work on Windows.
+    and ~tcsh~, however this does not work on Windows.
