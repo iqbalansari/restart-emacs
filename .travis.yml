@@ -1,16 +1,20 @@
 language: emacs-lisp
 sudo: false
 env:
-  - EVM_EMACS=emacs-24.4-travis
+  - EVM_EMACS=emacs-24.4
 
 cache:
   apt: true
+  directories:
+  - $HOME/emacsen
 
 addons:
   apt:
     packages:
       - python
       - curl
+      - libxpm-dev
+      - texinfo
 
 before_install:
   - curl -fsSkL https://raw.github.com/rejeep/evm/master/go | bash
