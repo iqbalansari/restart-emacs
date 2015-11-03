@@ -1,4 +1,4 @@
-;;; emojify-test.el --- Tests for restart-emacs              -*- lexical-binding: t; -*-
+;;; restart-emacs-test.el --- Tests for restart-emacs              -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;;; Tests for restart-emacs, major use case is to run from the command-line
