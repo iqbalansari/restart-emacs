@@ -1,6 +1,7 @@
 * Restart Emacs
 
-  [[http://melpa.org/#/restart-emacs][file:http://melpa.org/packages/restart-emacs-badge.svg]] [[http://stable.melpa.org/#/restart-emacs][file:http://stable.melpa.org/packages/restart-emacs-badge.svg]]
+  [[http://melpa.org/#/restart-emacs][file:http://melpa.org/packages/restart-emacs-badge.svg]] [[http://stable.melpa.org/#/restart-emacs][file:http://stable.melpa.org/packages/restart-emacs-badge.svg]] [[https://travis-ci.org/iqbalansari/restart-emacs][https://travis-ci.org/iqbalansari/restart-emacs.svg?branch=master]]
+
 
 ** Table of contents                                              :TOC_3_gh:
  - [[#restart-emacs][Restart Emacs]]
