@@ -78,10 +78,10 @@ sh, bash, zsh, fish, csh and tcsh shells"
 (defun restart-emacs--launch-other-emacs ()
   "Launch another Emacs session according to current platform."
   (apply (if (display-graphic-p)
-             (if (memq system-type '(windows-nt msdos))
+             (if (memq system-type '(windows-nt ms-dos))
                  #'restart-emacs--start-gui-on-windows
                #'restart-emacs--start-gui-using-sh)
-           (if (memq system-type '(windows-nt msdos))
+           (if (memq system-type '(windows-nt ms-dos))
                ;; This should not happen since we check this before triggering a restart
                (user-error "Cannot restart Emacs running in a windows terminal")
              #'restart-emacs--start-emacs-in-terminal))
