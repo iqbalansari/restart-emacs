@@ -15,8 +15,13 @@ addons:
       - curl
       - libxpm-dev
       - texinfo
+      - x11-utils
+      - xdotool
 
 before_install:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3
   - curl -fsSkL https://raw.github.com/rejeep/evm/master/go | bash
   - export PATH="$HOME/.evm/bin:$PATH"
   - mkdir -p $HOME/emacsen
@@ -31,6 +36,7 @@ install:
 
 script:
   - cask exec ert-runner
+  - sh linux-gui-restart-test.sh
 
 notifications:
   email:
