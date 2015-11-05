@@ -7,7 +7,7 @@
 # xdotool  - Available in xdotool package on Ubuntu
 
 if [ -z "$DISPLAY" ] ; then
-    echo "This script works only under X windows!"
+    echo "This script works only under X!"
     echo "Exiting ..."
     exit 2
 fi
@@ -53,7 +53,7 @@ mkdir -p /tmp/.emacs.d/
 printf "(modify-frame-parameters nil (list (cons 'name \"$EMACS_WIN_NAME\")))" > /tmp/.emacs.d/init.el
 
 # Launch Emacs
-cask exec emacs -l restart-emacs.el &
+cask exec emacs -l restart-emacs.el > /dev/null 2>&1 &
 
 if poll_emacs_started ; then
     EMACS_WINDOW_ID=$(xwininfo -name $EMACS_WIN_NAME | grep 'Window id:' | awk -F' ' '{print $4}')
