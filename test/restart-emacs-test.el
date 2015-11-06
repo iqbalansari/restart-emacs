@@ -55,7 +55,7 @@
   (with-mock
     (stub restart-emacs--get-emacs-binary => "/tmp/bin/emacs")
     (mock (call-process "sh" nil
-                        nil nil
+                        0 nil
                         "-c" "/tmp/bin/emacs --debug-init &"))
     (should-not (restart-emacs--start-gui-using-sh '("--debug-init")))))
 

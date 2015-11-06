@@ -44,7 +44,7 @@
 
 ARGS is the list arguments with which Emacs should be started"
   (call-process "sh" nil
-                nil nil
+                0 nil
                 "-c" (format "%s %s &"
                              (shell-quote-argument (restart-emacs--get-emacs-binary))
                              (restart-emacs--string-join (mapcar #'shell-quote-argument
