@@ -37,7 +37,7 @@ install:
   - cask install
 
 script:
-  - cask exec ert-runner --reporter ert
+  - cask exec ert-runner
   - sh linux-gui-restart-test.sh
 
 notifications:
