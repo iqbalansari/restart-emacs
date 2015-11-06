@@ -1,0 +1,9 @@
+* v0.1.1
+  Bugfix release fixing issues on Emacs versions older than v24.3 (and greater
+  than v24.1)
+** Do not wait for output from new instance of Emacs spawned in parent Emacs
+** Signals `error` instead of `user-error` if the later is not available (Emacs older than v24.3)
+** Add tests
+
+* v0.1
+  Initial public release
