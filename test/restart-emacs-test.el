@@ -15,9 +15,10 @@
 
 (require 'ert)
 (require 'el-mock)
+;; el-mock requires this
 (require 'cl)
 
-(require 'noflet)
+(require 'cl-lib)
 
 (ert-deftest restart-emacs-test-prefix-translation ()
   (with-mock
@@ -105,10 +106,15 @@
         (should-not (restart-emacs--launch-other-emacs))))))
 
 (ert-deftest restart-emacs-test-restart-setup ()
-  (noflet ((save-buffers-kill-emacs ()
-                                    (should (equal (car (last kill-emacs-hook))
-                                                   #'restart-emacs--launch-other-emacs))))
-    (restart-emacs)))
+  (cl-letf (((symbol-function 'save-buffers-kill-emacs)
+             (lambda nil
+               (should (equal (cl-position #'restart-emacs--launch-other-emacs kill-emacs-hook)
+                              (1- (length kill-emacs-hook)))))))
+
+    (restart-emacs)
+    ;; Make sure that hook to restart emacs is removed after the function
+    ;; restart-emacs exits
+    (should-not (cl-find #'restart-emacs--launch-other-emacs kill-emacs-hook))))
 
 (unless noninteractive
   (ert "^restart-emacs-"))
