@@ -40,6 +40,20 @@ backported here for compatibility with older Emacsen."
       (apply #'string-join strings separator)
     (mapconcat 'identity strings separator)))
 
+(defun restart-emacs--user-error (format &rest args)
+  "Signal a pilot error, making error message by passing all args to `format'.
+
+FORMAT and ARGS correspond to STRING and OBJECTS arguments to `format'.
+
+This is just like `error' except that `user-error's are expected to be the
+result of an incorrect manipulation on the part of the user, rather than the
+result of an actual problem.
+
+This function is available on Emacs v24.4 and higher, it has been
+backported here for compatibility with older Emacsen."
+  (if (fboundp 'user-error)
+      (apply #'user-error format args)
+    (signal 'user-error (list (apply #'format format args)))))
 (defun restart-emacs--get-emacs-binary ()
   "Get absolute path to binary of currently running Emacs."
   (expand-file-name invocation-name invocation-directory))
@@ -78,7 +92,7 @@ sh, bash, zsh, fish, csh and tcsh shells"
   "Ensure we can restart Emacs on current platform."
   (when (and (not (display-graphic-p))
              (memq system-type '(windows-nt ms-dos)))
-    (user-error (format "Cannot restart emacs running in terminal on system of type `%s'" system-type))))
+    (restart-emacs--user-error (format "Cannot restart emacs running in terminal on system of type `%s'" system-type))))
 
 (defun restart-emacs--launch-other-emacs ()
   "Launch another Emacs session according to current platform."
@@ -88,7 +102,7 @@ sh, bash, zsh, fish, csh and tcsh shells"
                #'restart-emacs--start-gui-using-sh)
            (if (memq system-type '(windows-nt ms-dos))
                ;; This should not happen since we check this before triggering a restart
-               (user-error "Cannot restart Emacs running in a windows terminal")
+               (restart-emacs--user-error "Cannot restart Emacs running in a windows terminal")
              #'restart-emacs--start-emacs-in-terminal))
          ;; Since this function is called in `kill-emacs-hook' it cannot accept
          ;; direct arguments the arguments are let-bound instead
