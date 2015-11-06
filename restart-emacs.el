@@ -32,8 +32,13 @@
   "The arguments with which to restart Emacs is bound dynamically.")
 
 (defun restart-emacs--string-join (strings &optional separator)
-  "Join all STRINGS using SEPARATOR."
-  (mapconcat 'identity strings separator))
+  "Join all STRINGS using SEPARATOR.
+
+This function is available on Emacs v24.4 and higher, it has been
+backported here for compatibility with older Emacsen."
+  (if (fboundp 'string-join)
+      (apply #'string-join strings separator)
+    (mapconcat 'identity strings separator)))
 
 (defun restart-emacs--get-emacs-binary ()
   "Get absolute path to binary of currently running Emacs."
