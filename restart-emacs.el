@@ -20,16 +20,22 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+
 ;;; Commentary:
 
 ;; This package provides a simple command to restart Emacs from within Emacs
 
+
+
 ;;; Code:
 
+;; Making the byte compiler happy
 (declare-function w32-shell-execute "w32fns.c")
 
-(defvar restart-emacs--args nil
-  "The arguments with which to restart Emacs is bound dynamically.")
+
+
+;; Compatibility functions
 
 (defun restart-emacs--string-join (strings &optional separator)
   "Join all STRINGS using SEPARATOR.
@@ -54,6 +60,14 @@ backported here for compatibility with older Emacsen."
   (if (fboundp 'user-error)
       (apply #'user-error format args)
     (signal 'user-error (list (apply #'format format args)))))
+
+
+
+;; Core functions
+
+(defvar restart-emacs--args nil
+  "The arguments with which to restart Emacs is bound dynamically.")
+
 (defun restart-emacs--get-emacs-binary ()
   "Get absolute path to binary of currently running Emacs."
   (expand-file-name invocation-name invocation-directory))
@@ -119,6 +133,10 @@ It does the following translation
         ((equal prefix '(16)) '("-Q"))
         ((equal prefix '(64)) (split-string (read-string "Arguments to start Emacs with (separated by space): ")
                                             " "))))
+
+
+
+;; User interface
 
 ;;;###autoload
 (defun restart-emacs (&optional args)
