@@ -33,10 +33,14 @@
     ;; stub it out
     (stub w32-long-file-name => "/tmp")
     (let ((system-type 'windows-nt))
-      (should-error (restart-emacs--ensure-can-restart) :type 'user-error))
+      (should-error (restart-emacs--ensure-can-restart) :type (if (version<= "24.3" emacs-version)
+                                                                  'user-error
+                                                                'error)))
 
     (let ((system-type 'ms-dos))
-      (should-error (restart-emacs--ensure-can-restart) :type 'user-error)))
+      (should-error (restart-emacs--ensure-can-restart) :type (if (version<= "24.3" emacs-version)
+                                                                  'user-error
+                                                                'error))))
 
   (with-mock
     (stub display-graphic-p => t)
@@ -84,7 +88,9 @@
 
     (dolist (system '(windows-nt ms-dos))
       (let ((system-type system))
-        (should-error (restart-emacs--launch-other-emacs) :type 'user-error))))
+        (should-error (restart-emacs--launch-other-emacs) :type (if (version<= "24.3" emacs-version)
+                                                                    'user-error
+                                                                  'error)))))
 
   (with-mock
     (stub display-graphic-p => t)

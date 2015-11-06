@@ -43,23 +43,16 @@
 This function is available on Emacs v24.4 and higher, it has been
 backported here for compatibility with older Emacsen."
   (if (fboundp 'string-join)
-      (apply #'string-join strings separator)
+      (apply #'string-join (list strings separator))
     (mapconcat 'identity strings separator)))
 
 (defun restart-emacs--user-error (format &rest args)
-  "Signal a pilot error, making error message by passing all args to `format'.
+  "Signal a `user-error' if available otherwise signal a generic `error'.
 
-FORMAT and ARGS correspond to STRING and OBJECTS arguments to `format'.
-
-This is just like `error' except that `user-error's are expected to be the
-result of an incorrect manipulation on the part of the user, rather than the
-result of an actual problem.
-
-This function is available on Emacs v24.4 and higher, it has been
-backported here for compatibility with older Emacsen."
+FORMAT and ARGS correspond to STRING and OBJECTS arguments to `format'."
   (if (fboundp 'user-error)
       (apply #'user-error format args)
-    (signal 'user-error (list (apply #'format format args)))))
+    (apply #'error format args)))
 
 
 
