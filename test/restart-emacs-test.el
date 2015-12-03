@@ -54,7 +54,16 @@
 (ert-deftest restart-emacs-test-path-calculation ()
   (let ((invocation-name "emacs")
         (invocation-directory "/tmp/test/"))
-    (should (string= (restart-emacs--get-emacs-binary) "/tmp/test/emacs"))))
+    (should (string= (restart-emacs--get-emacs-binary) "/tmp/test/emacs")))
+
+  ;; Use runemacs.exe on Windows see #2 on Github
+  (with-mock
+   (stub w32-long-file-name => "/tmp")
+   (stub file-exists-p => t)
+   (let ((invocation-name "emacs")
+         (invocation-directory "/tmp/test/")
+         (system-type 'windows-nt))
+     (should (string= (restart-emacs--get-emacs-binary) "/tmp/test/runemacs.exe")))))
 
 (ert-deftest restart-emacs-test-gui-using-sh ()
   (with-mock
@@ -62,19 +71,19 @@
     (mock (call-process "sh" nil
                         0 nil
                         "-c" "/tmp/bin/emacs --debug-init &"))
-    (should-not (restart-emacs--start-gui-using-sh '("--debug-init")))))
+    (restart-emacs--start-gui-using-sh '("--debug-init"))))
 
 (ert-deftest restart-emacs-test-gui-on-windows ()
   (with-mock
     (stub restart-emacs--get-emacs-binary => "/tmp/bin/emacs")
     (mock (w32-shell-execute "open" "/tmp/bin/emacs" '("--debug-init")))
-    (should-not (restart-emacs--start-gui-on-windows '("--debug-init")))))
+    (restart-emacs--start-gui-on-windows '("--debug-init"))))
 
 (ert-deftest restart-emacs-test-start-emacs-in-terminal ()
   (with-mock
     (stub restart-emacs--get-emacs-binary => "/tmp/bin/emacs")
     (mock (suspend-emacs "fg ; /tmp/bin/emacs --debug-init -nw"))
-    (should-not (restart-emacs--start-emacs-in-terminal '("--debug-init")))))
+    (restart-emacs--start-emacs-in-terminal '("--debug-init"))))
 
 (ert-deftest restart-emacs-test-strategy ()
   (with-mock

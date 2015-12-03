@@ -60,8 +60,15 @@ FORMAT and ARGS correspond to STRING and OBJECTS arguments to `format'."
   "The arguments with which to restart Emacs is bound dynamically.")
 
 (defun restart-emacs--get-emacs-binary ()
-  "Get absolute path to binary of currently running Emacs."
-  (expand-file-name invocation-name invocation-directory))
+  "Get absolute path to binary of currently running Emacs.
+
+On Windows get path to runemacs.exe if possible."
+  (let ((emacs-binary-path (expand-file-name invocation-name invocation-directory))
+        (runemacs-binary-path (when (memq system-type '(windows-nt ms-dos))
+                                (expand-file-name "runemacs.exe" invocation-directory))))
+    (if (and runemacs-binary-path (file-exists-p runemacs-binary-path))
+        runemacs-binary-path
+      emacs-binary-path)))
 
 (defun restart-emacs--start-gui-using-sh (&optional args)
   "Start GUI version of Emacs using sh.
