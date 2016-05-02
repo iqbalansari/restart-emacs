@@ -28,6 +28,9 @@
 
 ;;; Code:
 
+(require 'server)
+(require 'desktop)
+
 ;; Making the byte compiler happy
 (declare-function w32-shell-execute "w32fns.c")
 
@@ -102,22 +105,67 @@ sh, bash, zsh, fish, csh and tcsh shells"
                                                              args)
                                                      " "))))
 
+(defun restart-emacs--daemon (&optional args)
+  "Restart Emacs daemon with the provided ARGS.
+
+This function arranges for Emacs frames to be restored and makes sure the
+new Emacs instance uses the same server-name as the current instance"
+  ;; TODO: Do not save desktop if the user config is already doing so
+  (shell-command-to-string (format "notify-send 'args: %s'" (prin1-to-string args)))
+  (with-temp-file "/tmp/v"
+    (insert (prin1-to-string args)))
+  (call-process "sh" nil
+                0 nil
+                "-c" (format "%s --daemon=%s %s &"
+                             (shell-quote-argument (restart-emacs--get-emacs-binary))
+                             server-name
+                             (restart-emacs--string-join (mapcar #'shell-quote-argument args)
+                                                         " "))))
+
 (defun restart-emacs--ensure-can-restart ()
   "Ensure we can restart Emacs on current platform."
   (when (and (not (display-graphic-p))
              (memq system-type '(windows-nt ms-dos)))
     (restart-emacs--user-error (format "Cannot restart emacs running in terminal on system of type `%s'" system-type))))
 
+(defun restart-emacs--prepare-for-restart (&optional args)
+  (if (daemonp)
+      (let* ((config-file (make-temp-file "restart-emacs-desktop-config"))
+             (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
+             (desktop-dirname temporary-file-directory)
+             (desktop-loader-sexp `(let ((desktop-base-file-name ,desktop-base-file-name)
+                                         (display-color-p (symbol-function 'display-color-p))
+                                         (enable-local-variables :safe))
+                                     (unwind-protect
+                                         (progn
+                                           ;; Temporarily bind `display-color-p' to #'ignore
+                                           ;; since it hangs Emacs server
+                                           (fset 'display-color-p  #'ignore)
+                                           (if (featurep 'desktop)
+                                               ;; Desktop mode is already loaded
+                                               (desktop-read ,desktop-dirname)
+                                             ;; Desktop is not loaded, load it
+                                             ;; restore the buffer and unload it
+                                             (require 'desktop)
+                                             (desktop-read ,desktop-dirname)
+                                             (unload-feature (quote desktop))))
+                                       (fset 'display-color-p (symbol-value 'display-color-p))))))
+        (desktop-save temporary-file-directory t t)
+        (with-temp-file config-file
+          (insert (prin1-to-string desktop-loader-sexp)))
+        (append args (list "--load" config-file)))
+    args))
+
 (defun restart-emacs--launch-other-emacs ()
   "Launch another Emacs session according to current platform."
-  (apply (if (display-graphic-p)
-             (if (memq system-type '(windows-nt ms-dos))
-                 #'restart-emacs--start-gui-on-windows
-               #'restart-emacs--start-gui-using-sh)
-           (if (memq system-type '(windows-nt ms-dos))
-               ;; This should not happen since we check this before triggering a restart
-               (restart-emacs--user-error "Cannot restart Emacs running in a windows terminal")
-             #'restart-emacs--start-emacs-in-terminal))
+  (apply (cond ((daemonp) #'restart-emacs--daemon)
+               ((display-graphic-p) (if (memq system-type '(windows-nt ms-dos))
+                                        #'restart-emacs--start-gui-on-windows
+                                      #'restart-emacs--start-gui-using-sh))
+               (t (if (memq system-type '(windows-nt ms-dos))
+                      ;; This should not happen since we check this before triggering a restart
+                      (restart-emacs--user-error "Cannot restart Emacs running in a windows terminal")
+                    #'restart-emacs--start-emacs-in-terminal)))
          ;; Since this function is called in `kill-emacs-hook' it cannot accept
          ;; direct arguments the arguments are let-bound instead
          (list restart-emacs--args)))
@@ -133,6 +181,9 @@ It does the following translation
         ((equal prefix '(16)) '("-Q"))
         ((equal prefix '(64)) (split-string (read-string "Arguments to start Emacs with (separated by space): ")
                                             " "))))
+
+(defun restart-emacs--tty-terminal-p (terminal)
+  (assoc 'terminal-initted (terminal-parameters terminal)))
 
 
 
@@ -158,10 +209,11 @@ with which Emacs should be restarted."
   (restart-emacs--ensure-can-restart)
   ;; We need the new emacs to be spawned after all kill-emacs-hooks
   ;; have been processed and there is nothing interesting left
-  (let ((kill-emacs-hook (append kill-emacs-hook (list #'restart-emacs--launch-other-emacs)))
-        (restart-emacs--args (if (called-interactively-p 'any)
-                                        (restart-emacs--translate-prefix-to-args args)
-                                      args)))
+  (let* ((kill-emacs-hook (append kill-emacs-hook (list #'restart-emacs--launch-other-emacs)))
+	 (translated-args (if (called-interactively-p 'any)
+			      (restart-emacs--translate-prefix-to-args args)
+			    args))
+         (restart-emacs--args (restart-emacs--prepare-for-restart translated-args)))
     (save-buffers-kill-emacs)))
 
 (provide 'restart-emacs)
