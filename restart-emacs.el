@@ -1,6 +1,6 @@
 ;;; restart-emacs.el --- Restart emacs from within emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015  Iqbal Ansari
+;; Copyright (C) 2015-2016  Iqbal Ansari
 
 ;; Author: Iqbal Ansari <iqbalansari02@yahoo.com>
 ;; Keywords: convenience
