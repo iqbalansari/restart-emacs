@@ -133,6 +133,7 @@ new Emacs instance uses the same server-name as the current instance"
       (let* ((config-file (make-temp-file "restart-emacs-desktop-config"))
              (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
              (desktop-dirname temporary-file-directory)
+             (display-supports-color (display-color-p))
              (frameset-filter-alist (append '((client . :never)
                                               (tty . :never)
                                               (tty-type . :never)
@@ -147,9 +148,12 @@ new Emacs instance uses the same server-name as the current instance"
                                          (desktop-restore-eager t))
                                      (unwind-protect
                                          (progn
-                                           ;; Temporarily bind `display-color-p' to #'ignore
-                                           ;; since it hangs Emacs server
-                                           (fset 'display-color-p  #'ignore)
+                                           ;; Rebind display-color-p to use pre
+                                           ;; calculated value, since daemon
+                                           ;; calls to the function hang the
+                                           ;; daemon
+                                           (fset 'display-color-p (lambda (&rest ignored)
+                                                                    ,display-supports-color))
                                            (if (featurep 'desktop)
                                                ;; Desktop mode is already loaded
                                                (progn
