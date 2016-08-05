@@ -133,9 +133,18 @@ new Emacs instance uses the same server-name as the current instance"
       (let* ((config-file (make-temp-file "restart-emacs-desktop-config"))
              (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
              (desktop-dirname temporary-file-directory)
+             (frameset-filter-alist (append '((client . :never)
+                                              (tty . :never)
+                                              (tty-type . :never)
+                                              (background-color . :never)
+                                              (foreground-color . :never))
+                                            frameset-filter-alist))
              (desktop-loader-sexp `(let ((desktop-base-file-name ,desktop-base-file-name)
+                                         (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
                                          (display-color-p (symbol-function 'display-color-p))
-                                         (enable-local-variables :safe))
+                                         (desktop-restore-reuses-frames nil)
+                                         (enable-local-variables :safe)
+                                         (desktop-restore-eager t))
                                      (unwind-protect
                                          (progn
                                            ;; Temporarily bind `display-color-p' to #'ignore
@@ -143,7 +152,9 @@ new Emacs instance uses the same server-name as the current instance"
                                            (fset 'display-color-p  #'ignore)
                                            (if (featurep 'desktop)
                                                ;; Desktop mode is already loaded
-                                               (desktop-read ,desktop-dirname)
+                                               (progn
+                                                 (desktop-read ,desktop-dirname)
+                                                 (desktop-release-lock ,desktop-dirname))
                                              ;; Desktop is not loaded, load it
                                              ;; restore the buffer and unload it
                                              (require 'desktop)
