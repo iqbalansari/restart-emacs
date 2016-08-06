@@ -130,7 +130,8 @@ new Emacs instance uses the same server-name as the current instance"
 
 (defun restart-emacs--prepare-for-restart (&optional args)
   (if (daemonp)
-      (let* ((config-file (make-temp-file "restart-emacs-desktop-config"))
+      (let* (desktop-file-modtime
+             (config-file (make-temp-file "restart-emacs-desktop-config"))
              (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
              (desktop-dirname temporary-file-directory)
              (desktop-restore-eager t)
