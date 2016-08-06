@@ -73,6 +73,50 @@ On Windows get path to runemacs.exe if possible."
         runemacs-binary-path
       emacs-binary-path)))
 
+(defun restart-emacs--frame-restorer-using-desktop ()
+  (let* (desktop-file-modtime
+         (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
+         (desktop-dirname temporary-file-directory)
+         (desktop-restore-eager t)
+         (frameset-filter-alist (append '((client . :never))
+                                        frameset-filter-alist)))
+    (desktop-save temporary-file-directory t t)
+    `(let (desktop-dirname
+           desktop-file-modtime
+           (desktop-base-file-name ,desktop-base-file-name)
+           (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
+           (display-color-p (symbol-function 'display-color-p))
+           (desktop-restore-reuses-frames nil)
+           (enable-local-variables :safe))
+       (unwind-protect
+           (progn
+             ;; Rebind display-color-p to use pre
+             ;; calculated value, since daemon
+             ;; calls to the function hang the
+             ;; daemon
+             (fset 'display-color-p (lambda (&rest ignored)
+                                      ,(display-color-p)))
+             (require 'desktop)
+             (desktop-read ,desktop-dirname)
+             (desktop-release-lock ,desktop-dirname))
+         ;; Restore display-color-p's definition
+         (fset 'display-color-p (symbol-value 'display-color-p))
+         ;; Cleanup the files
+         (ignore-errors
+           (delete-file (desktop-full-file-name))
+           (delete-file (desktop-full-lock-name))
+           (delete-file load-file-name))))))
+
+(defun restart-emacs--prepare-for-restart (&optional args)
+  (if (daemonp)
+      (let ((config-file (make-temp-file "restart-emacs-desktop-config")))
+        (with-temp-file config-file
+          (insert (prin1-to-string (if (locate-library "frameset")
+                                       (restart-emacs--frame-restorer-using-desktop)
+                                     '(shell-command-to-string "notify-send 'restart-emacs' 'Use persp'")))))
+        (append args (list "--load" config-file)))
+    args))
+
 (defun restart-emacs--start-gui-using-sh (&optional args)
   "Start GUI version of Emacs using sh.
 
@@ -127,47 +171,6 @@ new Emacs instance uses the same server-name as the current instance"
   (when (and (not (display-graphic-p))
              (memq system-type '(windows-nt ms-dos)))
     (restart-emacs--user-error (format "Cannot restart emacs running in terminal on system of type `%s'" system-type))))
-
-(defun restart-emacs--prepare-for-restart (&optional args)
-  (if (daemonp)
-      (let* (desktop-file-modtime
-             (config-file (make-temp-file "restart-emacs-desktop-config"))
-             (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
-             (desktop-dirname temporary-file-directory)
-             (desktop-restore-eager t)
-             (display-supports-color (display-color-p))
-             (frameset-filter-alist (append '((client . :never))
-                                            frameset-filter-alist))
-             (desktop-loader-sexp `(let (desktop-dirname
-                                         desktop-file-modtime
-                                         (desktop-base-file-name ,desktop-base-file-name)
-                                         (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
-                                         (display-color-p (symbol-function 'display-color-p))
-                                         (desktop-restore-reuses-frames nil)
-                                         (enable-local-variables :safe))
-                                     (unwind-protect
-                                         (progn
-                                           ;; Rebind display-color-p to use pre
-                                           ;; calculated value, since daemon
-                                           ;; calls to the function hang the
-                                           ;; daemon
-                                           (fset 'display-color-p (lambda (&rest ignored)
-                                                                    ,display-supports-color))
-                                           (require 'desktop)
-                                           (desktop-read ,desktop-dirname)
-                                           (desktop-release-lock ,desktop-dirname))
-                                       ;; Restore display-color-p's definition
-                                       (fset 'display-color-p (symbol-value 'display-color-p))
-                                       ;; Cleanup the files
-                                       (ignore-errors
-                                         (delete-file (desktop-full-file-name))
-                                         (delete-file (desktop-full-lock-name))
-                                         (delete-file ,config-file))))))
-        (desktop-save temporary-file-directory t t)
-        (with-temp-file config-file
-          (insert (prin1-to-string desktop-loader-sexp)))
-        (append args (list "--load" config-file)))
-    args))
 
 (defun restart-emacs--launch-other-emacs ()
   "Launch another Emacs session according to current platform."
