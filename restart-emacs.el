@@ -153,17 +153,16 @@ new Emacs instance uses the same server-name as the current instance"
                                            ;; daemon
                                            (fset 'display-color-p (lambda (&rest ignored)
                                                                     ,display-supports-color))
-                                           (if (featurep 'desktop)
-                                               ;; Desktop mode is already loaded
-                                               (progn
-                                                 (desktop-read ,desktop-dirname)
-                                                 (desktop-release-lock ,desktop-dirname))
-                                             ;; Desktop is not loaded, load it
-                                             ;; restore the buffer and unload it
-                                             (require 'desktop)
-                                             (desktop-read ,desktop-dirname)
-                                             (unload-feature (quote desktop))))
-                                       (fset 'display-color-p (symbol-value 'display-color-p))))))
+                                           (require 'desktop)
+                                           (desktop-read ,desktop-dirname)
+                                           (desktop-release-lock ,desktop-dirname))
+                                       ;; Restore display-color-p's definition
+                                       (fset 'display-color-p (symbol-value 'display-color-p))
+                                       ;; Cleanup the files
+                                       (ignore-errors
+                                         (delete-file (desktop-full-file-name))
+                                         (delete-file (desktop-full-lock-name))
+                                         (delete-file ,config-file))))))
         (desktop-save temporary-file-directory t t)
         (with-temp-file config-file
           (insert (prin1-to-string desktop-loader-sexp)))
