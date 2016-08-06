@@ -137,7 +137,9 @@ new Emacs instance uses the same server-name as the current instance"
              (display-supports-color (display-color-p))
              (frameset-filter-alist (append '((client . :never))
                                             frameset-filter-alist))
-             (desktop-loader-sexp `(let ((desktop-base-file-name ,desktop-base-file-name)
+             (desktop-loader-sexp `(let (desktop-dirname
+                                         desktop-file-modtime
+                                         (desktop-base-file-name ,desktop-base-file-name)
                                          (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
                                          (display-color-p (symbol-function 'display-color-p))
                                          (desktop-restore-reuses-frames nil)
