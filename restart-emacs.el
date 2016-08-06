@@ -133,6 +133,7 @@ new Emacs instance uses the same server-name as the current instance"
       (let* ((config-file (make-temp-file "restart-emacs-desktop-config"))
              (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
              (desktop-dirname temporary-file-directory)
+             (desktop-restore-eager t)
              (display-supports-color (display-color-p))
              (frameset-filter-alist (append '((client . :never))
                                             frameset-filter-alist))
@@ -140,8 +141,7 @@ new Emacs instance uses the same server-name as the current instance"
                                          (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
                                          (display-color-p (symbol-function 'display-color-p))
                                          (desktop-restore-reuses-frames nil)
-                                         (enable-local-variables :safe)
-                                         (desktop-restore-eager t))
+                                         (enable-local-variables :safe))
                                      (unwind-protect
                                          (progn
                                            ;; Rebind display-color-p to use pre
