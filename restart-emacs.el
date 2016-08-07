@@ -183,11 +183,11 @@ sh, bash, zsh, fish, csh and tcsh shells"
                                                              args)
                                                      " "))))
 
-(defun restart-emacs--daemon (&optional args)
+(defun restart-emacs--daemon-using-sh (&optional args)
   "Restart Emacs daemon with the provided ARGS.
 
-This function arranges for Emacs frames to be restored and makes sure the
-new Emacs instance uses the same server-name as the current instance"
+This function makes sure the new Emacs instance uses the same server-name as the
+current instance"
   (call-process "sh" nil
                 0 nil
                 "-c" (format "%s --daemon=%s %s &"
@@ -195,6 +195,17 @@ new Emacs instance uses the same server-name as the current instance"
                              server-name
                              (restart-emacs--string-join (mapcar #'shell-quote-argument args)
                                                          " "))))
+
+(defun restart-emacs--daemon-on-windows (&optional args)
+  "Restart Emacs daemon with the provided ARGS.
+
+This function makes sure the new Emacs instance uses the same server-name as the
+current instance
+
+TODO: Not tested yet"
+  (w32-shell-execute "open"
+                     (restart-emacs--get-emacs-binary)
+                     (append (list (concat "--daemon=" server-name)) args)))
 
 (defun restart-emacs--ensure-can-restart ()
   "Ensure we can restart Emacs on current platform."
@@ -217,10 +228,14 @@ Set `restart-emacs-with-tty-frames-p' to non-nil to restart Emacs irrespective o
 
 (defun restart-emacs--launch-other-emacs ()
   "Launch another Emacs session according to current platform."
-  (apply (cond ((daemonp) #'restart-emacs--daemon)
+  (apply (cond ((daemonp) (if (memq system-type '(windows-nt ms-dos))
+                              #'restart-emacs--daemon-on-windows
+                            #'restart-emacs--daemon-using-sh))
+
                ((display-graphic-p) (if (memq system-type '(windows-nt ms-dos))
                                         #'restart-emacs--start-gui-on-windows
                                       #'restart-emacs--start-gui-using-sh))
+
                (t (if (memq system-type '(windows-nt ms-dos))
                       ;; This should not happen since we check this before triggering a restart
                       (restart-emacs--user-error "Cannot restart Emacs running in a windows terminal")
