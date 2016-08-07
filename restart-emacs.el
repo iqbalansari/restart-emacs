@@ -120,7 +120,7 @@ On Windows get path to runemacs.exe if possible."
            (fset 'display-color-p (symbol-value 'display-color-p))
            ;; Cleanup the files
            (ignore-errors
-;             (delete-file load-file-name)
+             (delete-file load-file-name)
              (delete-file (desktop-full-file-name))
              (delete-file (desktop-full-lock-name))))))))
 
