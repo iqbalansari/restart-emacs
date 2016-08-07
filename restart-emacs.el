@@ -81,31 +81,48 @@ On Windows get path to runemacs.exe if possible."
          (frameset-filter-alist (append '((client . :never))
                                         frameset-filter-alist)))
     (desktop-save temporary-file-directory t t)
-    `(let (desktop-dirname
-           desktop-file-modtime
-           (desktop-base-file-name ,desktop-base-file-name)
-           (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
-           (display-color-p (symbol-function 'display-color-p))
-           (desktop-restore-reuses-frames nil)
-           (enable-local-variables :safe))
-       (unwind-protect
-           (progn
-             ;; Rebind display-color-p to use pre
-             ;; calculated value, since daemon
-             ;; calls to the function hang the
-             ;; daemon
-             (fset 'display-color-p (lambda (&rest ignored)
-                                      ,(display-color-p)))
-             (require 'desktop)
-             (desktop-read ,desktop-dirname)
-             (desktop-release-lock ,desktop-dirname))
-         ;; Restore display-color-p's definition
-         (fset 'display-color-p (symbol-value 'display-color-p))
-         ;; Cleanup the files
-         (ignore-errors
-           (delete-file (desktop-full-file-name))
-           (delete-file (desktop-full-lock-name))
-           (delete-file load-file-name))))))
+    `(progn
+       (defun restart-emacs--notify-user (tty)
+         (with-temp-file tty
+           (let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
+                  (server-file (expand-file-name server-name server-dir)))
+             (insert (format "Emacs daemon restarted! Use 'emacsclient -nw -s %s' to reconnect to it"
+                             server-file)))))
+
+       (defun restart-emacs--frameset-tty-filter (tty filtered parameters saving)
+         (when (cdr tty)
+           (run-at-time 0.5
+                        nil
+                        (apply-partially 'restart-emacs--notify-user (cdr tty))))
+         (frameset-filter-tty-to-GUI tty filtered parameters saving))
+
+       (let (desktop-dirname
+             desktop-file-modtime
+             (desktop-base-file-name ,desktop-base-file-name)
+             (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
+             (display-color-p (symbol-function 'display-color-p))
+             (desktop-restore-reuses-frames nil)
+             (frameset-filter-alist (append '((tty . restart-emacs--frameset-tty-filter))
+                                            frameset-filter-alist))
+             (enable-local-variables :safe))
+         (unwind-protect
+             (progn
+               ;; Rebind display-color-p to use pre
+               ;; calculated value, since daemon
+               ;; calls to the function hang the
+               ;; daemon
+               (fset 'display-color-p (lambda (&rest ignored)
+                                        ,(display-color-p)))
+               (require 'desktop)
+               (desktop-read ,desktop-dirname)
+               (desktop-release-lock ,desktop-dirname))
+           ;; Restore display-color-p's definition
+           (fset 'display-color-p (symbol-value 'display-color-p))
+           ;; Cleanup the files
+           (ignore-errors
+;             (delete-file load-file-name)
+             (delete-file (desktop-full-file-name))
+             (delete-file (desktop-full-lock-name))))))))
 
 (defun restart-emacs--prepare-for-restart (&optional args)
   (if (daemonp)
