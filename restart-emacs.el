@@ -36,6 +36,23 @@
 
 
 
+;; Customizations
+
+(defgroup restart-emacs nil
+  "Customization options for restart-emacs"
+  :group 'tools
+  :prefix "restart-emacs-")
+
+(defcustom restart-emacs-daemon-with-tty-frames-p nil
+  "Restart Emacs daemon even if it has tty frames.
+
+Currently `restart-emacs' cannot restore such frames, it just
+notifies the user once the daemon has restarted"
+  :type 'boolean
+  :group 'restart-emacs)
+
+
+
 ;; Compatibility functions
 
 (defun restart-emacs--string-join (strings &optional separator)
@@ -124,7 +141,7 @@ On Windows get path to runemacs.exe if possible."
              (delete-file (desktop-full-file-name))
              (delete-file (desktop-full-lock-name))))))))
 
-(defun restart-emacs--prepare-for-restart (&optional args)
+(defun restart-emacs--add-frame-restorer (&optional args)
   (if (daemonp)
       (let ((config-file (make-temp-file "restart-emacs-desktop-config")))
         (with-temp-file config-file
@@ -187,7 +204,20 @@ new Emacs instance uses the same server-name as the current instance"
   "Ensure we can restart Emacs on current platform."
   (when (and (not (display-graphic-p))
              (memq system-type '(windows-nt ms-dos)))
-    (restart-emacs--user-error (format "Cannot restart emacs running in terminal on system of type `%s'" system-type))))
+    (restart-emacs--user-error (format "Cannot restart Emacs running in terminal on system of type `%s'" system-type)))
+
+  (when (and (daemonp)
+             (not (locate-library "frameset")))
+    (restart-emacs--user-error "Cannot restart Emacs daemon on versions before 24.4"))
+
+  (when (and (daemonp)
+             (delq nil (mapcar (lambda (frame)
+                                 (frame-parameter frame 'tty))
+                               (frame-list)))
+             (not restart-emacs-daemon-with-tty-frames-p)
+             (not (y-or-n-p "Current Emacs daemon has tty frames, `restart-emacs' cannot restore them, continue anyway?")))
+    (restart-emacs--user-error "Current Emacs daemon has tty frames, aborting `restart-emacs'.
+Set `restart-emacs-with-tty-frames-p' to non-nil to restart Emacs irrespective of tty frames")))
 
 (defun restart-emacs--launch-other-emacs ()
   "Launch another Emacs session according to current platform."
@@ -246,7 +276,7 @@ with which Emacs should be restarted."
 	 (translated-args (if (called-interactively-p 'any)
 			      (restart-emacs--translate-prefix-to-args args)
 			    args))
-         (restart-emacs--args (restart-emacs--prepare-for-restart translated-args)))
+     (restart-emacs--args (restart-emacs--add-frame-restorer translated-args)))
     (save-buffers-kill-emacs)))
 
 (provide 'restart-emacs)
