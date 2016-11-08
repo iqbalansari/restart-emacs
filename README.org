@@ -13,6 +13,7 @@
    - [[#compatibility][Compatibility]]
      - [[#restarting-gui-emacs][Restarting GUI Emacs]]
      - [[#restarting-emacs-running-in-a-terminal][Restarting Emacs running in a terminal]]
+   - [[#contributing][Contributing]]
 
 ** What is this?
    This is a simple package to restart Emacs for within Emacs. Inspired by [[http://emacs.stackexchange.com/questions/5428/restart-emacs-from-within-emacs][this]]
@@ -61,3 +62,21 @@
     This requires that the shell from which Emacs was launched supports job
     control.  This has been tested to work on ~sh~, ~bash~, ~zsh~, ~fish~, ~csh~
     and ~tcsh~, however this does not work on Windows.
+
+** Contributing
+   Code as well as documentation contributions are welcome.
+
+   [[https://github.com/cask/cask][Cask]] is used to manage project dependencies so make sure you have it
+   installed. To run the tests you need to install the dependencies by running
+   the following
+
+   #+BEGIN_SRC sh
+     cask install
+   #+END_SRC
+
+   After the installation completes you can run the tests by running the
+   following command
+
+   #+BEGIN_SRC sh
+     cask exec ert-runner
+   #+END_SRC
