@@ -86,7 +86,8 @@ ARGS is the list arguments with which Emacs should be started"
   "Start GUI version of Emacs on windows.
 
 ARGS is the list arguments with which Emacs should be started"
-  (w32-shell-execute "open" (restart-emacs--get-emacs-binary) args))
+  (w32-shell-execute "open" (restart-emacs--get-emacs-binary) 
+                     (restart-emacs--string-join args " ")))
 
 (defun restart-emacs--start-emacs-in-terminal (&optional args)
   "Start Emacs in current terminal.
