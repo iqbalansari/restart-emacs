@@ -76,8 +76,9 @@
 (ert-deftest restart-emacs-test-gui-on-windows ()
   (with-mock
     (stub restart-emacs--get-emacs-binary => "/tmp/bin/emacs")
-    (mock (w32-shell-execute "open" "/tmp/bin/emacs" '("--debug-init")))
-    (restart-emacs--start-gui-on-windows '("--debug-init"))))
+    ;; w32-shell-execute expects arguments to be space separated string, see #5 on Github
+    (mock (w32-shell-execute "open" "/tmp/bin/emacs" "--debug-init some-random-arg"))
+    (restart-emacs--start-gui-on-windows '("--debug-init" "some-random-arg"))))
 
 (ert-deftest restart-emacs-test-start-emacs-in-terminal ()
   (with-mock
