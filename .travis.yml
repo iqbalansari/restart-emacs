@@ -39,7 +39,7 @@ install:
   - cask install
 
 script:
-  - cask exec ert-runner
+  - find . -name '*.elc' -delete && cask exec ert-runner
   - sh linux-gui-restart-test.sh
 
 notifications:
