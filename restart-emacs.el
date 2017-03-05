@@ -120,6 +120,7 @@ On Windows get path to runemacs.exe if possible."
              (desktop-base-file-name ,desktop-base-file-name)
              (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
              (display-color-p (symbol-function 'display-color-p))
+             (display-graphic-p (symbol-function 'display-graphic-p))
              (desktop-restore-reuses-frames nil)
              (frameset-filter-alist (append '((tty . restart-emacs--frameset-tty-filter))
                                             frameset-filter-alist))
@@ -132,10 +133,12 @@ On Windows get path to runemacs.exe if possible."
                ;; daemon
                (fset 'display-color-p (lambda (&rest ignored)
                                         ,(display-color-p)))
+               (fset 'display-graphic-p (lambda (&rest ignored) t))
                (desktop-read ,desktop-dirname)
                (desktop-release-lock ,desktop-dirname))
            ;; Restore display-color-p's definition
            (fset 'display-color-p (symbol-value 'display-color-p))
+           (fset 'display-graphic-p (symbol-value 'display-graphic-p))
            ;; Cleanup the files
            (ignore-errors
              (delete-file load-file-name)
