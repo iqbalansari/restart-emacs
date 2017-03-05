@@ -95,8 +95,57 @@ On Windows get path to runemacs.exe if possible."
     (cons 'restart-emacs-file
 	  (buffer-file-name (window-buffer window)))))
 
-(defun restart-emacs--frame-restorer-using-desktop ()
-  "Return sexp that needs to executed on Emacs restart to restore frames using desktop."
+(defun restart-emacs--notify-user (tty filename)
+  (with-temp-file tty
+    (let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
+           (server-file (expand-file-name server-name server-dir)))
+      (insert (format "Emacs daemon restarted! Use 'emacsclient -nw -s %s %s' to reconnect to it"
+                      server-file
+                      filename)))))
+
+(defun restart-emacs--frameset-tty-filter (tty filtered parameters saving)
+  (when (cdr tty)
+    (run-at-time 0.5
+                 nil
+                 (apply-partially 'restart-emacs--notify-user
+                                  (cdr tty)
+                                  (cdr (assoc 'restart-emacs-file filtered)))))
+  (frameset-filter-tty-to-GUI tty filtered parameters saving))
+
+(defun restart-emacs--restore-frames (file)
+  (let* (desktop-file-modtime
+         (desktop-dirname (file-name-directory file))
+         (desktop-base-file-name (file-name-base file))
+         (desktop-base-lock-name (concat desktop-base-file-name ".lock"))
+         (desktop-restore-reuses-frames nil)
+         ;; Add filter for tty frames, the filter simply logs a message on
+         ;; the parent ttys of the frame
+         (frameset-filter-alist (append '((tty . restart-emacs--frameset-tty-filter))
+                                        frameset-filter-alist))
+         ;; Disable prompts for safe variables during restart
+         (enable-local-variables :safe)
+         ;; We mock these two functions while restoring frames
+         ;; Calls to `display-color-p' blocks Emacs in daemon mode (possibly)
+         ;; because the call fails
+         (display-color-p (symbol-function 'display-color-p))
+         ;; We mock `display-graphic-p' since desktop mode has changed to
+         ;; not restore frames when we are not on graphic display
+         (display-graphic-p (symbol-function 'display-graphic-p)))
+    (unwind-protect
+        (progn
+          (fset 'display-color-p (lambda (&rest ignored) t))
+          (fset 'display-graphic-p (lambda (&rest ignored) t))
+          (desktop-read desktop-dirname)
+          (desktop-release-lock desktop-dirname))
+      ;; Restore display-color-p's definition
+      (fset 'display-color-p display-color-p)
+      (fset 'display-graphic-p display-graphic-p)
+      ;; Cleanup the files
+      (ignore-errors (delete-file (desktop-full-file-name)))
+      (ignore-errors (delete-file (desktop-full-lock-name))))))
+
+(defun restart-emacs--save-frames-using-desktop ()
+  "Save current frames to a file and return the full path to the file."
   (let* (desktop-file-modtime
          (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
          (desktop-dirname temporary-file-directory)
@@ -104,63 +153,12 @@ On Windows get path to runemacs.exe if possible."
          (frameset-filter-alist (append '((client . restart-emacs--record-tty-buffer))
                                         frameset-filter-alist)))
     (desktop-save temporary-file-directory t t)
-    `(progn
-       (require 'desktop)
-       (defun restart-emacs--notify-user (tty filename)
-         (with-temp-file tty
-           (let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
-                  (server-file (expand-file-name server-name server-dir)))
-             (insert (format "Emacs daemon restarted! Use 'emacsclient -nw -s %s %s' to reconnect to it"
-                             server-file
-                             filename)))))
+    (expand-file-name desktop-base-file-name desktop-dirname)))
 
-       (defun restart-emacs--frameset-tty-filter (tty filtered parameters saving)
-         (when (cdr tty)
-           (run-at-time 0.5
-                        nil
-                        (apply-partially 'restart-emacs--notify-user
-                                         (cdr tty)
-                                         (cdr (assoc 'restart-emacs-file filtered)))))
-         (frameset-filter-tty-to-GUI tty filtered parameters saving))
-
-       (let (desktop-dirname
-             desktop-file-modtime
-             (desktop-base-file-name ,desktop-base-file-name)
-             (desktop-base-lock-name (concat ,desktop-base-file-name ".lock"))
-             (display-color-p (symbol-function 'display-color-p))
-             (display-graphic-p (symbol-function 'display-graphic-p))
-             (desktop-restore-reuses-frames nil)
-             (frameset-filter-alist (append '((tty . restart-emacs--frameset-tty-filter))
-                                            frameset-filter-alist))
-             (enable-local-variables :safe))
-         (unwind-protect
-             (progn
-               ;; Rebind display-color-p to use pre
-               ;; calculated value, since daemon
-               ;; calls to the function hang the
-               ;; daemon
-               (fset 'display-color-p (lambda (&rest ignored)
-                                        ,(display-color-p)))
-               (fset 'display-graphic-p (lambda (&rest ignored) t))
-               (desktop-read ,desktop-dirname)
-               (desktop-release-lock ,desktop-dirname))
-           ;; Restore display-color-p's definition
-           (fset 'display-color-p (symbol-value 'display-color-p))
-           (fset 'display-graphic-p (symbol-value 'display-graphic-p))
-           ;; Cleanup the files
-           (ignore-errors
-             (delete-file load-file-name)
-             (delete-file (desktop-full-file-name))
-             (delete-file (desktop-full-lock-name))))))))
-
-(defun restart-emacs--add-frame-restorer (&optional args)
-  "Add arguments needed to restore Emacs frames after restart to ARGS."
-  (if (daemonp)
-      (let ((config-file (make-temp-file "restart-emacs-desktop-config")))
-        (with-temp-file config-file
-          (insert (prin1-to-string (restart-emacs--frame-restorer-using-desktop))))
-        (append args (list "--load" config-file)))
-    args))
+(defun restart-emacs--frame-restore-args ()
+  "Get the arguments for restoring frames."
+  (unless (bound-and-true-p desktop-save-mode)
+    (list "--restart-emacs-desktop" (restart-emacs--save-frames-using-desktop))))
 
 (defun restart-emacs--start-gui-using-sh (&optional args)
   "Start GUI version of Emacs using sh.
@@ -272,6 +270,13 @@ It does the following translation
 ;; User interface
 
 ;;;###autoload
+(defun restart-emacs-handle-command-line-args (&rest ignored)
+  (restart-emacs--restore-frames (pop command-line-args-left)))
+
+;;;###autoload
+(add-to-list 'command-switch-alist '("--restart-emacs-desktop" . restart-emacs-handle-command-line-args))
+
+;;;###autoload
 (defun restart-emacs (&optional args)
   "Restart Emacs.
 
@@ -292,10 +297,11 @@ with which Emacs should be restarted."
   ;; We need the new emacs to be spawned after all kill-emacs-hooks
   ;; have been processed and there is nothing interesting left
   (let* ((kill-emacs-hook (append kill-emacs-hook (list #'restart-emacs--launch-other-emacs)))
-	 (translated-args (if (called-interactively-p 'any)
-			      (restart-emacs--translate-prefix-to-args args)
-			    args))
-     (restart-emacs--args (restart-emacs--add-frame-restorer translated-args)))
+         (translated-args (if (called-interactively-p 'any)
+                              (restart-emacs--translate-prefix-to-args args)
+                            args))
+         (restart-emacs--args (append translated-args
+                                      (restart-emacs--frame-restore-args))))
     (save-buffers-kill-emacs)))
 
 (provide 'restart-emacs)
