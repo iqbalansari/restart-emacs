@@ -90,29 +90,37 @@ On Windows get path to runemacs.exe if possible."
         runemacs-binary-path
       emacs-binary-path)))
 
+(defun restart-emacs--record-tty-buffer (current filtered parameters saving)
+  (let ((window (frame-selected-window (process-get (cdr current) 'frame))))
+    (cons 'restart-emacs-file
+	  (buffer-file-name (window-buffer window)))))
+
 (defun restart-emacs--frame-restorer-using-desktop ()
   "Return sexp that needs to executed on Emacs restart to restore frames using desktop."
   (let* (desktop-file-modtime
          (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
          (desktop-dirname temporary-file-directory)
          (desktop-restore-eager t)
-         (frameset-filter-alist (append '((client . :never))
+         (frameset-filter-alist (append '((client . restart-emacs--record-tty-buffer))
                                         frameset-filter-alist)))
     (desktop-save temporary-file-directory t t)
     `(progn
        (require 'desktop)
-       (defun restart-emacs--notify-user (tty)
+       (defun restart-emacs--notify-user (tty filename)
          (with-temp-file tty
            (let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
                   (server-file (expand-file-name server-name server-dir)))
-             (insert (format "Emacs daemon restarted! Use 'emacsclient -nw -s %s' to reconnect to it"
-                             server-file)))))
+             (insert (format "Emacs daemon restarted! Use 'emacsclient -nw -s %s %s' to reconnect to it"
+                             server-file
+                             filename)))))
 
        (defun restart-emacs--frameset-tty-filter (tty filtered parameters saving)
          (when (cdr tty)
            (run-at-time 0.5
                         nil
-                        (apply-partially 'restart-emacs--notify-user (cdr tty))))
+                        (apply-partially 'restart-emacs--notify-user
+                                         (cdr tty)
+                                         (cdr (assoc 'restart-emacs-file filtered)))))
          (frameset-filter-tty-to-GUI tty filtered parameters saving))
 
        (let (desktop-dirname
