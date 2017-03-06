@@ -157,8 +157,11 @@ On Windows get path to runemacs.exe if possible."
 
 (defun restart-emacs--frame-restore-args ()
   "Get the arguments for restoring frames."
-  (unless (bound-and-true-p desktop-save-mode)
-    (list "--restart-emacs-desktop" (restart-emacs--save-frames-using-desktop))))
+  ;; frameset was not available on old versions
+  (when (require 'frameset nil :no-error)
+    (when (or (daemonp) ;; Restore frames unconditionally in daemon mode since desktop-mode does not
+              (not (bound-and-true-p desktop-save-mode))) ;; If user has enabled desktop-save-mode leave him alone
+      (list "--restart-emacs-desktop" (restart-emacs--save-frames-using-desktop)))))
 
 (defun restart-emacs--start-gui-using-sh (&optional args)
   "Start GUI version of Emacs using sh.
