@@ -54,9 +54,10 @@ notifies the user once the daemon has restarted"
 (defcustom restart-emacs-restore-frames nil
   "Attempt to restore frames on Emacs restart.
 
-Please note this functionality works only on Emacs 24.4 and later,
-since the earlier versions did not ship with the frameset library
-which is used to restore the frames."
+Please note this functionality works only on Emacs 24.4 and later, since the
+earlier versions did not ship with the frameset library which is used to restore
+the frames.  This variable is ignored while restarting daemon since frames are
+restored unconditionally while restarting daemon mode."
   :type 'boolean
   :group 'restart-emacs)
 
@@ -201,11 +202,17 @@ PARAMETERS and SAVING."
 (defun restart-emacs--frame-restore-args ()
   "Get the arguments for restoring frames."
   ;; frameset was not available on old versions
-  (when (and (locate-library "frameset") restart-emacs-restore-frames)
-    (when (or (daemonp) ;; Restore frames unconditionally in daemon mode since desktop-mode does not
-              (not (bound-and-true-p desktop-save-mode))) ;; If user has enabled desktop-save-mode leave him alone
-      (list "--restart-emacs-desktop"
-            (restart-emacs--save-frames-using-desktop)))))
+  (when (and (locate-library "frameset")
+             ;; If user has enabled desktop-save-mode leave him alone unless she
+             ;; is restarting the daemon since right now Emacs does not restore
+             ;; the frames in daemon mode. Also ignore the `restart-emacs-restore-frames'
+             ;; configuration since restarting the daemon without restoring frames
+             ;; doesn't really help
+             (or (daemonp)
+                 (and restart-emacs-restore-frames
+                      (not (bound-and-true-p desktop-save-mode)))))
+    (list "--restart-emacs-desktop"
+          (restart-emacs--save-frames-using-desktop))))
 
 (defun restart-emacs--start-gui-using-sh (&optional args)
   "Start GUI version of Emacs using sh.
