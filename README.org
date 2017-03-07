@@ -13,6 +13,7 @@
    - [[#compatibility][Compatibility]]
      - [[#restarting-gui-emacs][Restarting GUI Emacs]]
      - [[#restarting-emacs-running-in-a-terminal][Restarting Emacs running in a terminal]]
+     - [[#restarting-emacs-daemons][Restarting Emacs daemons]]
    - [[#contributing][Contributing]]
 
 ** What is this?
@@ -62,6 +63,17 @@
     This requires that the shell from which Emacs was launched supports job
     control.  This has been tested to work on ~sh~, ~bash~, ~zsh~, ~fish~, ~csh~
     and ~tcsh~, however this does not work on Windows.
+
+*** Restarting Emacs daemons
+    The latest version of ~restart-emacs~ can now restart Emacs daemons. The the
+    frames are restored once the daemon restarts using ~desktop-mode~. However
+    since ~desktop-mode~ learned to restore frames only Emacs version 24.4
+    onwards the daemons can be restarted only on Emacs versions 24.4 and later.
+
+    Another issue with restarting Emacs daemons is that the frames open in a
+    terminal cannot be recreated on restart, instead the ~restart-emacs~ would
+    write a notification on the terminal with the instructions to reconnect, any
+    suggestions to improve this are welcome.
 
 ** Contributing
    Code as well as documentation contributions are welcome.
