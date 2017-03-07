@@ -90,29 +90,59 @@ On Windows get path to runemacs.exe if possible."
         runemacs-binary-path
       emacs-binary-path)))
 
-(defun restart-emacs--record-tty-buffer (current filtered parameters saving)
-  (let ((window (frame-selected-window (process-get (cdr current) 'frame))))
-    (cons 'restart-emacs-file
-	  (buffer-file-name (window-buffer window)))))
+(defun restart-emacs--record-tty-file (current &rest ignored)
+  "Save the buffer which is being currently selected in the frame.
 
-(defun restart-emacs--notify-user (tty filename)
+This function is used as a filter for tty frames in `frameset-filter-alist'.
+See `frameset-filter-alist' for explanation of CURRENT and rest of the
+parameters."
+  (let ((window (frame-selected-window (process-get (cdr current) 'frame))))
+    (cons 'restart-emacs-file (buffer-file-name (window-buffer window)))))
+
+(defun restart-emacs--notify-connection-instructions (tty filename)
+  "Print instructions on the given TTY about connecting to the daemon.
+
+It prints the complete command line invocation that can be used connect to the
+newly restarted daemon, FILENAME is the path to the the file that was selected
+in the frame that was open on this tty before the daemon restarted."
   (with-temp-file tty
     (let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
-           (server-file (expand-file-name server-name server-dir)))
-      (insert (format "Emacs daemon restarted! Use 'emacsclient -nw -s %s %s' to reconnect to it"
-                      server-file
-                      filename)))))
+           (server-file (expand-file-name server-name server-dir))
+           (emacsclient-path (expand-file-name "emacsclient" invocation-directory))
+           (quoted-server-file (shell-quote-argument server-file))
+           (quoted-emacsclient-path (shell-quote-argument emacsclient-path))
+           (message (if filename
+                        (format "Emacs daemon restarted! Use '%s -nw -s %s %s' to reconnect to it"
+                                quoted-emacsclient-path
+                                quoted-server-file
+                                (shell-quote-argument filename))
+                      (format "Emacs daemon restarted! Use '%s -nw -s %s' to reconnect to it"
+                              quoted-emacsclient-path
+                              quoted-server-file))))
+      (insert message))))
 
 (defun restart-emacs--frameset-tty-filter (tty filtered parameters saving)
+  "Restore the TTY from saved frameset.
+
+This does not actually restore anything rather it simply notifies the user on
+tty the instructions to reconnect to the daemon and then invokes the default
+filter for ttys (`frameset-filter-tty-to-GUI')
+
+See the documentation for `frameset-filter-alist' to understand FILTERED,
+PARAMETERS and SAVING."
   (when (cdr tty)
     (run-at-time 0.5
                  nil
-                 (apply-partially 'restart-emacs--notify-user
+                 (apply-partially 'restart-emacs--notify-connection-instructions
                                   (cdr tty)
                                   (cdr (assoc 'restart-emacs-file filtered)))))
   (frameset-filter-tty-to-GUI tty filtered parameters saving))
 
-(defun restart-emacs--restore-frames (file)
+(defun restart-emacs--restore-frames-using-desktop (file)
+  "Restore the frames using the desktop FILE."
+  ;; We let-bind a bunch of variables from desktop mode to make sure
+  ;; the changes done while restoring from the desktop file are not
+  ;; leaked into normal functioning of the desktop-mode
   (let* (desktop-file-modtime
          (desktop-dirname (file-name-directory file))
          (desktop-base-file-name (file-name-base file))
@@ -122,7 +152,7 @@ On Windows get path to runemacs.exe if possible."
          ;; the parent ttys of the frame
          (frameset-filter-alist (append '((tty . restart-emacs--frameset-tty-filter))
                                         frameset-filter-alist))
-         ;; Disable prompts for safe variables during restart
+         ;; Disable prompts for safe variables during restoration
          (enable-local-variables :safe)
          ;; We mock these two functions while restoring frames
          ;; Calls to `display-color-p' blocks Emacs in daemon mode (possibly)
@@ -130,15 +160,18 @@ On Windows get path to runemacs.exe if possible."
          (display-color-p (symbol-function 'display-color-p))
          ;; We mock `display-graphic-p' since desktop mode has changed to
          ;; not restore frames when we are not on graphic display
+         ;; TODO: Report Emacs bug
          (display-graphic-p (symbol-function 'display-graphic-p)))
     (unwind-protect
         (progn
+          ;; TODO: The following might break things
           (fset 'display-color-p (lambda (&rest ignored) t))
           (fset 'display-graphic-p (lambda (&rest ignored) t))
           (desktop-read desktop-dirname)
           (desktop-release-lock desktop-dirname))
       ;; Restore display-color-p's definition
       (fset 'display-color-p display-color-p)
+      ;; Restore display-graphic-p's definition
       (fset 'display-graphic-p display-graphic-p)
       ;; Cleanup the files
       (ignore-errors (delete-file (desktop-full-file-name)))
@@ -150,7 +183,8 @@ On Windows get path to runemacs.exe if possible."
          (desktop-base-file-name (make-temp-name "restart-emacs-desktop"))
          (desktop-dirname temporary-file-directory)
          (desktop-restore-eager t)
-         (frameset-filter-alist (append '((client . restart-emacs--record-tty-buffer))
+         ;; For tty frames record the currently selected file
+         (frameset-filter-alist (append '((client . restart-emacs--record-tty-file))
                                         frameset-filter-alist)))
     (desktop-save temporary-file-directory t t)
     (expand-file-name desktop-base-file-name desktop-dirname)))
@@ -158,10 +192,11 @@ On Windows get path to runemacs.exe if possible."
 (defun restart-emacs--frame-restore-args ()
   "Get the arguments for restoring frames."
   ;; frameset was not available on old versions
-  (when (require 'frameset nil :no-error)
+  (when (locate-library "frameset")
     (when (or (daemonp) ;; Restore frames unconditionally in daemon mode since desktop-mode does not
               (not (bound-and-true-p desktop-save-mode))) ;; If user has enabled desktop-save-mode leave him alone
-      (list "--restart-emacs-desktop" (restart-emacs--save-frames-using-desktop)))))
+      (list "--restart-emacs-desktop"
+            (restart-emacs--save-frames-using-desktop)))))
 
 (defun restart-emacs--start-gui-using-sh (&optional args)
   "Start GUI version of Emacs using sh.
@@ -234,7 +269,7 @@ TODO: Not tested yet"
                                  (frame-parameter frame 'tty))
                                (frame-list)))
              (not restart-emacs-daemon-with-tty-frames-p)
-             (not (y-or-n-p "Current Emacs daemon has tty frames, `restart-emacs' cannot restore them, continue anyway?")))
+             (not (yes-or-no-p "Current Emacs daemon has tty frames, `restart-emacs' cannot restore them, continue anyway? ")))
     (restart-emacs--user-error "Current Emacs daemon has tty frames, aborting `restart-emacs'.
 Set `restart-emacs-with-tty-frames-p' to non-nil to restart Emacs irrespective of tty frames")))
 
@@ -274,7 +309,11 @@ It does the following translation
 
 ;;;###autoload
 (defun restart-emacs-handle-command-line-args (&rest ignored)
-  (restart-emacs--restore-frames (pop command-line-args-left)))
+  "Handle the --restart-emacs-desktop command line argument.
+
+The value of the argument is the desktop file from which the frames should be
+restored."
+  (restart-emacs--restore-frames-using-desktop (pop command-line-args-left)))
 
 ;;;###autoload
 (add-to-list 'command-switch-alist '("--restart-emacs-desktop" . restart-emacs-handle-command-line-args))
