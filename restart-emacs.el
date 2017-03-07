@@ -175,8 +175,9 @@ PARAMETERS and SAVING."
     (unwind-protect
         (progn
           ;; TODO: The following might break things
-          (fset 'display-color-p (lambda (&rest ignored) t))
-          (fset 'display-graphic-p (lambda (&rest ignored) t))
+	  (when (daemonp)
+	    (fset 'display-color-p (lambda (&rest ignored) t))
+	    (fset 'display-graphic-p (lambda (&rest ignored) t)))
           (desktop-read desktop-dirname)
           (desktop-release-lock desktop-dirname))
       ;; Restore display-color-p's definition
