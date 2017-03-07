@@ -51,6 +51,15 @@ notifies the user once the daemon has restarted"
   :type 'boolean
   :group 'restart-emacs)
 
+(defcustom restart-emacs-restore-frames nil
+  "Attempt to restore frames on Emacs restart.
+
+Please note this functionality works only on Emacs 24.4 and later,
+since the earlier versions did not ship with the frameset library
+which is used to restore the frames."
+  :type 'boolean
+  :group 'restart-emacs)
+
 
 
 ;; Compatibility functions
@@ -192,7 +201,7 @@ PARAMETERS and SAVING."
 (defun restart-emacs--frame-restore-args ()
   "Get the arguments for restoring frames."
   ;; frameset was not available on old versions
-  (when (locate-library "frameset")
+  (when (and (locate-library "frameset") restart-emacs-restore-frames)
     (when (or (daemonp) ;; Restore frames unconditionally in daemon mode since desktop-mode does not
               (not (bound-and-true-p desktop-save-mode))) ;; If user has enabled desktop-save-mode leave him alone
       (list "--restart-emacs-desktop"
