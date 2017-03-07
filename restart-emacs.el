@@ -261,7 +261,9 @@ current instance
 TODO: Not tested yet"
   (w32-shell-execute "open"
                      (restart-emacs--get-emacs-binary)
-                     (append (list (concat "--daemon=" server-name)) args)))
+                     (restart-emacs--string-join (cons (concat "--daemon=" server-name)
+                                                       args)
+                                                 " ")))
 
 (defun restart-emacs--ensure-can-restart ()
   "Ensure we can restart Emacs on current platform."
