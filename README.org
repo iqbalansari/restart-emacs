@@ -54,6 +54,9 @@
    - with two ~universal-argument~ (=C-u= =C-u=) Emacs is restarted with ~-Q~ flag
    - with three ~universal-argument~ (=C-u= =C-u= =C-u=) the user is prompted for the arguments
 
+   ~restart-emacs~ can restore frames on restart, right this is experimental and
+    disabled by default to enable it set ~restart-emacs-restore-frames~ to ~t~.
+
 ** Compatibility
 *** Restarting GUI Emacs
     Restarting graphical Emacs should work on any UNIXy system with ~sh~ and on
