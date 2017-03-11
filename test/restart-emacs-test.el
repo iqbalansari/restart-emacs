@@ -95,13 +95,13 @@
     (mock (restart-emacs--start-emacs-in-terminal nil) :times 5)
     (dolist (system '(gnu gnu/linux gnu/kfreebsd darwin cygwin))
       (let ((system-type system))
-        (should-not (restart-emacs--launch-other-emacs))))
+        (should-not (restart-emacs--launch-other-emacs nil))))
 
     (dolist (system '(windows-nt ms-dos))
       (let ((system-type system))
-        (should-error (restart-emacs--launch-other-emacs) :type (if (version<= "24.3" emacs-version)
-                                                                    'user-error
-                                                                  'error)))))
+        (should-error (restart-emacs--launch-other-emacs nil) :type (if (version<= "24.3" emacs-version)
+                                                                        'user-error
+                                                                      'error)))))
 
   (with-mock
     (stub display-graphic-p => t)
@@ -109,22 +109,28 @@
     (mock (restart-emacs--start-gui-on-windows nil) :times 2)
     (dolist (system '(gnu gnu/linux gnu/kfreebsd darwin cygwin))
       (let ((system-type system))
-        (should-not (restart-emacs--launch-other-emacs))))
+        (should-not (restart-emacs--launch-other-emacs nil))))
 
     (dolist (system '(windows-nt ms-dos))
       (let ((system-type system))
-        (should-not (restart-emacs--launch-other-emacs))))))
+        (should-not (restart-emacs--launch-other-emacs nil))))))
 
 (ert-deftest restart-emacs-test-restart-setup ()
   (cl-letf (((symbol-function 'save-buffers-kill-emacs)
              (lambda nil
-               (should (equal (cl-position #'restart-emacs--launch-other-emacs kill-emacs-hook)
+               (should (equal (cl-position (apply-partially #'restart-emacs--launch-other-emacs
+                                                            (restart-emacs--frame-restore-args))
+                                           kill-emacs-hook
+                                           :test #'equal)
                               (1- (length kill-emacs-hook)))))))
 
     (restart-emacs)
     ;; Make sure that hook to restart emacs is removed after the function
     ;; restart-emacs exits
-    (should-not (cl-find #'restart-emacs--launch-other-emacs kill-emacs-hook))))
+    (should-not (cl-find (apply-partially #'restart-emacs--launch-other-emacs
+                                          (restart-emacs--frame-restore-args))
+                         kill-emacs-hook
+                         :test #'equal))))
 
 (unless noninteractive
   (ert "^restart-emacs-"))

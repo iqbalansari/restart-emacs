@@ -292,7 +292,7 @@ TODO: Not tested yet"
     (restart-emacs--user-error "Current Emacs daemon has tty frames, aborting `restart-emacs'.
 Set `restart-emacs-with-tty-frames-p' to non-nil to restart Emacs irrespective of tty frames")))
 
-(defun restart-emacs--launch-other-emacs ()
+(defun restart-emacs--launch-other-emacs (arguments)
   "Launch another Emacs session according to current platform."
   (apply (cond ((daemonp) (if (memq system-type '(windows-nt ms-dos))
                               #'restart-emacs--daemon-on-windows
@@ -308,7 +308,7 @@ Set `restart-emacs-with-tty-frames-p' to non-nil to restart Emacs irrespective o
                     #'restart-emacs--start-emacs-in-terminal)))
          ;; Since this function is called in `kill-emacs-hook' it cannot accept
          ;; direct arguments the arguments are let-bound instead
-         (list restart-emacs--args)))
+         (list arguments)))
 
 (defun restart-emacs--translate-prefix-to-args (prefix)
   "Translate the given PREFIX to arguments to be passed to Emacs.
@@ -357,12 +357,14 @@ with which Emacs should be restarted."
   (restart-emacs--ensure-can-restart)
   ;; We need the new emacs to be spawned after all kill-emacs-hooks
   ;; have been processed and there is nothing interesting left
-  (let* ((kill-emacs-hook (append kill-emacs-hook (list #'restart-emacs--launch-other-emacs)))
-         (translated-args (if (called-interactively-p 'any)
+  (let* ((translated-args (if (called-interactively-p 'any)
                               (restart-emacs--translate-prefix-to-args args)
                             args))
-         (restart-emacs--args (append translated-args
-                                      (restart-emacs--frame-restore-args))))
+         (restart-args (append translated-args
+                               (restart-emacs--frame-restore-args)))
+         (kill-emacs-hook (append kill-emacs-hook
+                                  (list (apply-partially #'restart-emacs--launch-other-emacs
+                                                         restart-args)))))
     (save-buffers-kill-emacs)))
 
 (provide 'restart-emacs)
