@@ -364,7 +364,10 @@ with which Emacs should be restarted."
                                (restart-emacs--frame-restore-args)))
          (kill-emacs-hook (append kill-emacs-hook
                                   (list (apply-partially #'restart-emacs--launch-other-emacs
-                                                         restart-args)))))
+                                                         restart-args))))
+         ;; Do not let timp delay Emacs exit
+         ;; https://github.com/iqbalansari/restart-emacs/issues/9
+         (timp-kill-emacs-close-thread-delay 0))
     (save-buffers-kill-emacs)))
 
 (provide 'restart-emacs)
