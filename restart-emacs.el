@@ -105,7 +105,7 @@ On Windows get path to runemacs.exe if possible."
 
 This function is used as a filter for tty frames in `frameset-filter-alist'.
 See `frameset-filter-alist' for explanation of CURRENT and rest of the
-parameters."
+parameters.  IGNORED are ignored."
   (let ((window (frame-selected-window (process-get (cdr current) 'frame))))
     (cons 'restart-emacs-file (buffer-file-name (window-buffer window)))))
 
@@ -293,7 +293,7 @@ TODO: Not tested yet"
 Set `restart-emacs-with-tty-frames-p' to non-nil to restart Emacs irrespective of tty frames")))
 
 (defun restart-emacs--launch-other-emacs (arguments)
-  "Launch another Emacs session according to current platform."
+  "Launch another Emacs session with ARGUMENTS according to current platform."
   (apply (cond ((daemonp) (if (memq system-type '(windows-nt ms-dos))
                               #'restart-emacs--daemon-on-windows
                             #'restart-emacs--daemon-using-sh))
@@ -331,7 +331,7 @@ It does the following translation
   "Handle the --restart-emacs-desktop command line argument.
 
 The value of the argument is the desktop file from which the frames should be
-restored."
+restored.  IGNORED are ignored."
   (restart-emacs--restore-frames-using-desktop (pop command-line-args-left)))
 
 ;;;###autoload
@@ -364,10 +364,7 @@ with which Emacs should be restarted."
                                (restart-emacs--frame-restore-args)))
          (kill-emacs-hook (append kill-emacs-hook
                                   (list (apply-partially #'restart-emacs--launch-other-emacs
-                                                         restart-args))))
-         ;; Do not let timp delay Emacs exit
-         ;; https://github.com/iqbalansari/restart-emacs/issues/9
-         (timp-kill-emacs-close-thread-delay 0))
+                                                         restart-args)))))
     (save-buffers-kill-emacs)))
 
 (provide 'restart-emacs)
