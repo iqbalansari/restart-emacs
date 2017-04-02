@@ -361,7 +361,12 @@ with which Emacs should be restarted."
                               (restart-emacs--translate-prefix-to-args args)
                             args))
          (restart-args (append translated-args
-                               (restart-emacs--frame-restore-args)))
+                               ;; When Emacs is started with a -Q
+                               ;; restart-emacs's autoloads would not be present
+                               ;; causing the the --restart-emacs-desktop
+                               ;; argument to be unhandled
+                               (unless (member "-Q" translated-args)
+                                 (restart-emacs--frame-restore-args))))
          (kill-emacs-hook (append kill-emacs-hook
                                   (list (apply-partially #'restart-emacs--launch-other-emacs
                                                          restart-args)))))
