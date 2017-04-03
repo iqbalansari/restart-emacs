@@ -322,6 +322,24 @@ It does the following translation
         ((equal prefix '(64)) (split-string (read-string "Arguments to start Emacs with (separated by space): ")
                                             " "))))
 
+(defun restart-emacs--guess-startup-directory ()
+  "Guess the directory the new Emacs instance should start from.
+
+On Linux it figures out the startup directory by reading /proc entry for current
+Emacs instance.  Otherwise it falls back to guessing the startup directory by
+reading `default-directory' of *Messages* or *scratch* buffers falling back to
+the HOME or USERPROFILE (only applicable on Window) environment variable and
+finally just using whatever is the current `default-directory'."
+  (or (and (file-exists-p (format "/proc/%d/cwd" (emacs-pid)))
+           (file-chase-links (format "/proc/%d/cwd" (emacs-pid))))
+      (and (get-buffer "*Messages*")
+           (with-current-buffer "*Messages*" default-directory))
+      (and (get-buffer "*scratch*")
+           (with-current-buffer "*scratch*" default-directory))
+      (getenv "HOME")
+      (getenv "USERPROFILE")
+      default-directory))
+
 
 
 ;; User interface
@@ -357,7 +375,8 @@ with which Emacs should be restarted."
   (restart-emacs--ensure-can-restart)
   ;; We need the new emacs to be spawned after all kill-emacs-hooks
   ;; have been processed and there is nothing interesting left
-  (let* ((translated-args (if (called-interactively-p 'any)
+  (let* ((default-directory (restart-emacs--guess-startup-directory))
+         (translated-args (if (called-interactively-p 'any)
                               (restart-emacs--translate-prefix-to-args args)
                             args))
          (restart-args (append translated-args
