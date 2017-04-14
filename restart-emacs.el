@@ -322,6 +322,37 @@ It does the following translation
         ((equal prefix '(64)) (split-string (read-string "Arguments to start Emacs with (separated by space): ")
                                             " "))))
 
+(defun restart-emacs--guess-startup-directory-using-proc ()
+  "Get the startup directory of current Emacs session from /proc."
+  (when (file-exists-p (format "/proc/%d/cwd" (emacs-pid)))
+    (file-chase-links (format "/proc/%d/cwd" (emacs-pid)))))
+
+(defun restart-emacs--guess-startup-directory-using-lsof ()
+  "Get the startup directory of the current Emacs session using the `lsof' program."
+  (when (executable-find "lsof")
+    (let* ((lsof-op (shell-command-to-string (format "lsof -d cwd -a -Fn -p %d"
+                                                     (emacs-pid))))
+           (raw-cwd (car (last (split-string lsof-op "\n" t))))
+           (cwd (substring raw-cwd 1)))
+      (when (< 0 (length cwd))
+        cwd))))
+
+(defun restart-emacs--guess-startup-directory-using-buffers ()
+  "Guess the startup directory for current Emacs session from some buffer.
+
+This tries to get Emacs startup directory from the *Messages* or *scratch*
+buffer, needless to say this would be wrong if the user has killed and recreated
+these buffers."
+  (or (and (get-buffer "*Messages*")
+           (with-current-buffer "*Messages*" default-directory))
+      (and (get-buffer "*scratch*")
+           (with-current-buffer "*scratch*" default-directory))))
+
+(defun restart-emacs--guess-startup-directory-from-env ()
+  "Guess the startup directory for current Emacs session from USERPROFILE or HOME."
+  (or (getenv "HOME")
+      (getenv "USERPROFILE")))
+
 (defun restart-emacs--guess-startup-directory ()
   "Guess the directory the new Emacs instance should start from.
 
@@ -330,14 +361,10 @@ Emacs instance.  Otherwise it falls back to guessing the startup directory by
 reading `default-directory' of *Messages* or *scratch* buffers falling back to
 the HOME or USERPROFILE (only applicable on Window) environment variable and
 finally just using whatever is the current `default-directory'."
-  (or (and (file-exists-p (format "/proc/%d/cwd" (emacs-pid)))
-           (file-chase-links (format "/proc/%d/cwd" (emacs-pid))))
-      (and (get-buffer "*Messages*")
-           (with-current-buffer "*Messages*" default-directory))
-      (and (get-buffer "*scratch*")
-           (with-current-buffer "*scratch*" default-directory))
-      (getenv "HOME")
-      (getenv "USERPROFILE")
+  (or (restart-emacs--guess-startup-directory-using-proc)
+      (restart-emacs--guess-startup-directory-using-lsof)
+      (restart-emacs--guess-startup-directory-using-buffers)
+      (restart-emacs--guess-startup-directory-from-env)
       default-directory))
 
 
