@@ -106,8 +106,9 @@ On Windows get path to runemacs.exe if possible."
 This function is used as a filter for tty frames in `frameset-filter-alist'.
 See `frameset-filter-alist' for explanation of CURRENT and rest of the
 parameters.  IGNORED are ignored."
-  (let ((window (frame-selected-window (process-get (cdr current) 'frame))))
-    (cons 'restart-emacs-file (buffer-file-name (window-buffer window)))))
+  (when (processp (cdr current))
+    (let ((window (frame-selected-window (process-get (cdr current) 'frame))))
+      (cons 'restart-emacs-file (buffer-file-name (window-buffer window))))))
 
 (defun restart-emacs--notify-connection-instructions (tty filename)
   "Print instructions on the given TTY about connecting to the daemon.
