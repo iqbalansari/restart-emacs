@@ -4,17 +4,20 @@
 
 
 ** Table of contents                                              :TOC_3_gh:
- - [[#restart-emacs][Restart Emacs]]
-   - [[#what-is-this][What is this?]]
-   - [[#installation][Installation]]
-     - [[#elpa][ELPA]]
-     - [[#el-get][El-get]]
-   - [[#usage][Usage]]
-   - [[#compatibility][Compatibility]]
-     - [[#restarting-gui-emacs][Restarting GUI Emacs]]
-     - [[#restarting-emacs-running-in-a-terminal][Restarting Emacs running in a terminal]]
-     - [[#restarting-emacs-daemons][Restarting Emacs daemons]]
-   - [[#contributing][Contributing]]
+- [[#restart-emacs][Restart Emacs]]
+  - [[#what-is-this][What is this?]]
+  - [[#installation][Installation]]
+    - [[#elpa][ELPA]]
+    - [[#el-get][El-get]]
+  - [[#usage][Usage]]
+  - [[#compatibility][Compatibility]]
+    - [[#restarting-gui-emacs][Restarting GUI Emacs]]
+    - [[#restarting-emacs-running-in-a-terminal][Restarting Emacs running in a terminal]]
+    - [[#restarting-emacs-daemons][Restarting Emacs daemons]]
+  - [[#contributing][Contributing]]
+  - [[#known-issues][Known Issues]]
+    - [[#command-line-arguments-are-not-preserved][Command line arguments are not preserved]]
+    - [[#the-restarted-daemon-quits-as-soon-as-the-all-the-visible-frames-are-killed][The restarted daemon quits as soon as the all the visible frames are killed]]
 
 ** What is this?
    This is a simple package to restart Emacs for within Emacs. Inspired by [[http://emacs.stackexchange.com/questions/5428/restart-emacs-from-within-emacs][this]]
@@ -95,3 +98,10 @@
    #+BEGIN_SRC sh
      cask exec ert-runner
    #+END_SRC
+
+** Known Issues
+*** Command line arguments are not preserved
+    The new Emacs instance does not use the same command line arguments as the
+    running instance. See [[https://github.com/iqbalansari/restart-emacs/issues/11][#11]] for more details
+*** The restarted daemon quits as soon as the all the visible frames are killed
+    See https://github.com/iqbalansari/restart-emacs/issues/10#issuecomment-307565719
