@@ -331,7 +331,8 @@ It does the following translation
 (defun restart-emacs--guess-startup-directory-using-lsof ()
   "Get the startup directory of the current Emacs session using the `lsof' program."
   (when (executable-find "lsof")
-    (let* ((lsof-op (shell-command-to-string (format "lsof -d cwd -a -Fn -p %d"
+    (let* ((default-directory "/")
+           (lsof-op (shell-command-to-string (format "lsof -d cwd -a -Fn -p %d"
                                                      (emacs-pid))))
            (raw-cwd (car (last (split-string lsof-op "\n" t))))
            (cwd (substring raw-cwd 1)))
