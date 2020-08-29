@@ -1,45 +1,59 @@
-language: emacs-lisp
-sudo: required
-env:
-  - EVM_EMACS=emacs-25.1
-  - EVM_EMACS=emacs-24.5
-  - EVM_EMACS=emacs-24.4
-  - EVM_EMACS=emacs-24.3
-  - EVM_EMACS=emacs-24.2
-  - EVM_EMACS=emacs-24.1
+
+# https://github.com/purcell/nix-emacs-ci
+language: nix
 
 cache:
-  apt: true
   directories:
-  - $HOME/emacsen
+  - $HOME/nix.store
 
-addons:
-  apt:
-    packages:
-      - python
-      - curl
-      - libxpm-dev
-      - texinfo
-      - x11-utils
-      - xdotool
+jobs:
+  include:
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-25-1
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-25-2
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-25-3
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-26-1
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-26-2
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-26-3
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-27-1
+    - os: linux
+      dist: bionic
+      env: EMACS_CI=emacs-snapshot
 
 before_install:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3
-  - curl -fsSkL https://raw.github.com/rejeep/evm/master/go | bash
-  - export PATH="$HOME/.evm/bin:$PATH"
-  - mkdir -p $HOME/emacsen
-  - evm config path $HOME/emacsen
+  - sudo mkdir -p /etc/nix
+  - echo "substituters = https://cache.nixos.org/ file://$HOME/nix.store" | sudo tee -a /etc/nix/nix.conf > /dev/null
+  - echo 'require-sigs = false' | sudo tee -a /etc/nix/nix.conf > /dev/null
+
+before_cache:
+  - mkdir -p $HOME/nix.store
+  - nix copy --to file://$HOME/nix.store -f default.nix buildInputs
 
 install:
-  - evm install $EVM_EMACS --skip
-  - evm use $EVM_EMACS
-  - curl -fsSL https://raw.githubusercontent.com/cask/cask/master/go | python
-  - export PATH="/home/travis/.cask/bin:$PATH"
-  - cask install
+  # The default "emacs" executable on the $PATH will now be the version named by $EMACS_CI
+  - bash <(curl https://raw.githubusercontent.com/purcell/nix-emacs-ci/master/travis-install)
+  - travis_retry eval $"curl -fsSL https://raw.githubusercontent.com/cask/cask/master/go | python ; sleep 10"
+  - export PATH=$HOME/.cask/bin:$PATH
+  - travis_retry eval $"cask install ; sleep 10"
+  - nix-env -i texinfo x11 xorg
 
 script:
+  - export PATH=$HOME/.cask/bin:$PATH
+  - emacs --version
+  - cask build
   - find . -name '*.elc' -delete && cask exec ert-runner
   - sh linux-gui-restart-test.sh
 
@@ -49,3 +63,8 @@ notifications:
       - iqbalansari02@yahoo.com
     on_success: never
     on_failure: always
+
+allow_failures:
+  - os: linux
+    dist: bionic
+    env: EMACS_CI=emacs-snapshot
