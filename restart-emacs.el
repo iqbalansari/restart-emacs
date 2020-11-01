@@ -61,6 +61,13 @@ restored unconditionally while restarting daemon mode."
   :type 'boolean
   :group 'restart-emacs)
 
+(defcustom restart-emacs-inhibit-kill-p nil
+  "Non-nil means inhibit killing the current session when restarting.
+This means that `restart-emacs' will spawn a new instance of
+Emacs without killing the current one."
+  :type 'boolean
+  :group 'restart-emacs)
+
 
 
 ;; Compatibility functions
@@ -398,7 +405,11 @@ When called interactively ARGS is interpreted as follows
   the arguments
 
 When called non-interactively ARGS should be a list of arguments
-with which Emacs should be restarted."
+with which Emacs should be restarted.
+
+If `restart-emacs-inhibit-kill-p' is non-nil, then the current
+Emacs instance is not killed, but a new instance is still
+spawned."
   (interactive "P")
   ;; Do not trigger a restart unless we are sure, we can restart emacs
   (restart-emacs--ensure-can-restart)
@@ -416,9 +427,12 @@ with which Emacs should be restarted."
                                (unless (member "-Q" translated-args)
                                  (restart-emacs--frame-restore-args))))
          (kill-emacs-hook (append kill-emacs-hook
-                                  (list (apply-partially #'restart-emacs--launch-other-emacs
-                                                         restart-args)))))
-    (save-buffers-kill-emacs)))
+                                  (unless restart-emacs-inhibit-kill-p
+                                    (list (apply-partially #'restart-emacs--launch-other-emacs
+                                                           restart-args))))))
+    (if restart-emacs-inhibit-kill-p
+        (restart-emacs--launch-other-emacs restart-args)
+        (save-buffers-kill-emacs))))
 
 (provide 'restart-emacs)
 ;;; restart-emacs.el ends here
