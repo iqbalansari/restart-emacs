@@ -61,13 +61,6 @@ restored unconditionally while restarting daemon mode."
   :type 'boolean
   :group 'restart-emacs)
 
-(defcustom restart-emacs-inhibit-kill-p nil
-  "Non-nil means inhibit killing the current session when restarting.
-This means that `restart-emacs' will spawn a new instance of
-Emacs without killing the current one."
-  :type 'boolean
-  :group 'restart-emacs)
-
 
 
 ;; Compatibility functions
@@ -391,6 +384,14 @@ restored.  IGNORED are ignored."
 ;;;###autoload
 (add-to-list 'command-switch-alist '("--restart-emacs-desktop" . restart-emacs-handle-command-line-args))
 
+(defvar restart-emacs--inhibit-kill-p nil
+  "Non-nil means inhibit killing the current session when restarting.
+This means that `restart-emacs' will spawn a new instance of
+Emacs without killing the current one.
+
+This is used internally to implement the command
+`restart-emacs-start-new-emacs'.")
+
 ;;;###autoload
 (defun restart-emacs (&optional args)
   "Restart Emacs.
@@ -405,11 +406,7 @@ When called interactively ARGS is interpreted as follows
   the arguments
 
 When called non-interactively ARGS should be a list of arguments
-with which Emacs should be restarted.
-
-If `restart-emacs-inhibit-kill-p' is non-nil, then the current
-Emacs instance is not killed, but a new instance is still
-spawned."
+with which Emacs should be restarted."
   (interactive "P")
   ;; Do not trigger a restart unless we are sure, we can restart emacs
   (restart-emacs--ensure-can-restart)
@@ -427,12 +424,31 @@ spawned."
                                (unless (member "-Q" translated-args)
                                  (restart-emacs--frame-restore-args))))
          (kill-emacs-hook (append kill-emacs-hook
-                                  (unless restart-emacs-inhibit-kill-p
+                                  (unless restart-emacs--inhibit-kill-p
                                     (list (apply-partially #'restart-emacs--launch-other-emacs
                                                            restart-args))))))
-    (if restart-emacs-inhibit-kill-p
+    (if restart-emacs--inhibit-kill-p
         (restart-emacs--launch-other-emacs restart-args)
         (save-buffers-kill-emacs))))
+
+;;;###autoload
+(defun restart-emacs-start-new-emacs (&optional args)
+  "Start a new instance of Emacs.
+
+When called interactively ARGS is interpreted as follows
+
+- with a single `universal-argument' (`C-u') the new Emacs is started
+  with `--debug-init' flag
+- with two `universal-argument' (`C-u') the new Emacs is started with
+  `-Q' flag
+- with three `universal-argument' (`C-u') the user prompted for
+  the arguments
+
+When called non-interactively ARGS should be a list of arguments
+with which the new Emacs should be started."
+  (interactive "P")
+  (let ((restart-emacs--inhibit-kill-p t))
+    (restart-emacs args)))
 
 (provide 'restart-emacs)
 ;;; restart-emacs.el ends here
