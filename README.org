@@ -47,7 +47,7 @@
     #+END_QUOTE
 
 ** Usage
-   It offers only one command ~restart-emacs~ which kills current Emacs session
+   It offers a command ~restart-emacs~ which kills current Emacs session
    and starts a new session.
 
    Additional arguments to be passed to the new instance can be specified using
@@ -59,6 +59,10 @@
 
    ~restart-emacs~ can restore frames on restart, right this is experimental and
     disabled by default to enable it set ~restart-emacs-restore-frames~ to ~t~.
+
+   There is also a second command ~restart-emacs-start-new-emacs~ which starts a
+   new session of Emacs without killing the current one. It takes the same arguments
+   as ~restart-emacs~.
 
 ** Compatibility
 *** Restarting GUI Emacs
