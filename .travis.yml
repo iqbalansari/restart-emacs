@@ -22,6 +22,7 @@ addons:
       - texinfo
       - x11-utils
       - xdotool
+      - xvfb
 
 before_install:
   - "export DISPLAY=:99.0"
