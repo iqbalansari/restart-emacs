@@ -23,6 +23,7 @@ addons:
       - curl
       - libxpm-dev
       - libx11-dev
+      - libxaw7-dev
       - texinfo
       - x11-utils
       - xdotool
