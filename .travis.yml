@@ -13,6 +13,9 @@ cache:
   directories:
   - $HOME/emacsen
 
+services:
+  - xvfb
+
 addons:
   apt:
     packages:
@@ -22,11 +25,9 @@ addons:
       - texinfo
       - x11-utils
       - xdotool
-      - xvfb
 
 before_install:
   - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
   - sleep 3
   - curl -fsSkL https://raw.github.com/rejeep/evm/master/go | bash
   - export PATH="$HOME/.evm/bin:$PATH"
