@@ -448,7 +448,7 @@ When called non-interactively ARGS should be a list of arguments
 with which the new Emacs should be started."
   (interactive "P")
   (let ((restart-emacs--inhibit-kill-p t))
-    (restart-emacs args)))
+    (funcall-interactively 'restart-emacs args)))
 
 (provide 'restart-emacs)
 ;;; restart-emacs.el ends here
