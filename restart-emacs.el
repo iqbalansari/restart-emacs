@@ -1,6 +1,6 @@
 ;;; restart-emacs.el --- Restart emacs from within emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2017  Iqbal Ansari
+;; Copyright (C) 2015-2022  Iqbal Ansari
 
 ;; Author: Iqbal Ansari <iqbalansari02@yahoo.com>
 ;; Keywords: convenience
@@ -18,7 +18,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
